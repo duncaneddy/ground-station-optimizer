@@ -1,0 +1,140 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.3,
+          5.6
+        ]
+      },
+      "properties": {
+        "station_name": "Accra",
+        "provider_name": "Viasat",
+        "frequency_bands": ["L", "S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          133.88,
+          -23.76
+        ]
+      },
+      "properties": {
+        "station_name": "Alice Springs",
+        "provider_name": "Viasat",
+        "frequency_bands": ["L", "S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -64.46,
+          -31.52
+        ]
+      },
+      "properties": {
+        "station_name": "Cordoba",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -147.54,
+          64.79
+        ]
+      },
+      "properties": {
+        "station_name": "Fairbanks",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.62,
+          51.24
+        ]
+      },
+      "properties": {
+        "station_name": "Guildford",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          143.45,
+          42.59
+        ]
+      },
+      "properties": {
+        "station_name": "Hokkaido",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.70,
+          25.88
+        ]
+      },
+      "properties": {
+        "station_name": "Krugersdorp",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.67,
+          34.18
+        ]
+      },
+      "properties": {
+        "station_name": "Pendergrass",
+        "provider_name": "Viasat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          21.42,
+          65.33
+        ]
+      },
+      "properties": {
+        "station_name": "Pieta",
+        "provider_name": "Viasat",
+        "frequency_bands": ["X"]
+      }
+    }
+  ]
+}

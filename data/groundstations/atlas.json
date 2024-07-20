@@ -1,0 +1,170 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -156.81,
+          71.27
+        ]
+      },
+      "properties": {
+        "station_name": "Utqiagvik",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.18,
+          56.40
+        ]
+      },
+      "properties": {
+        "station_name": "Dundee",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          141.62,
+          42.77
+        ]
+      },
+      "properties": {
+        "station_name": "Chitose",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.15,
+          35.05
+        ]
+      },
+      "properties": {
+        "station_name": "Mojave",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          55.35,
+          24.94
+        ]
+      },
+      "properties": {
+        "station_name": "Dubai",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -158.03,
+          21.67
+        ]
+      },
+      "properties": {
+        "station_name": "Paumalu",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          144.82,
+          13.51
+        ]
+      },
+      "properties": {
+        "station_name": "Harmon",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.34,
+          7.34
+        ]
+      },
+      "properties": {
+        "station_name": "Sunyani",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          30.39,
+          -1.96
+        ]
+      },
+      "properties": {
+        "station_name": "Mwulire",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -149.60,
+          -17.63
+        ]
+      },
+      "properties": {
+        "station_name": "Tahiti",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.38,
+          -46.52
+        ]
+      },
+      "properties": {
+        "station_name": "Awarua",
+        "provider_name": "Atlas",
+        "frequency_bands": ["S", "X"]
+      }
+    }
+  ]
+}

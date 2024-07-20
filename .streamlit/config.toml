@@ -1,0 +1,11 @@
+[server]
+port = 8080
+runOnSave = true
+
+[theme]
+base="light" # Always use light theme for visualizations
+
+[logger]
+# Level of logging: 'error', 'warning', 'info', or 'debug'.
+# Default: 'info'
+level = "info"

@@ -1,0 +1,181 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.3792,
+          -46.5281,
+          16.0
+        ]
+      },
+      "properties": {
+        "station_name": "Awarua",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          138.84949,
+          -32.962,
+          540.0
+        ]
+      },
+      "properties": {
+        "station_name": "Peterborough",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          115.34171,
+          -29.01042,
+          270.0
+        ]
+      },
+      "properties": {
+        "station_name": "Nangetty",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["UHF", "S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          80.72485,
+          7.27423,
+          462.0
+        ]
+      },
+      "properties": {
+        "station_name": "Kandy",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          49.48583,
+          40.46628,
+          764.0
+        ]
+      },
+      "properties": {
+        "station_name": "Absheron",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.03478,
+          45.69715,
+          296.0
+        ]
+      },
+      "properties": {
+        "station_name": "Lomazzo",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.8584,
+          60.74831,
+          19.0
+        ]
+      },
+      "properties": {
+        "station_name": "UNST",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["UHF","S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.16204,
+          38.67404,
+          690.0
+        ]
+      },
+      "properties": {
+        "station_name": "Puertollano",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["UHF", "VHF", "S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8.17419,
+          51.95358,
+          95.0
+        ]
+      },
+      "properties": {
+        "station_name": "Midleton",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["UHF", "VHF", "S"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -20.24609,
+          65.64737,
+          53.0
+        ]
+      },
+      "properties": {
+        "station_name": "Blonduos",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -25.13726,
+          36.99739,
+          194.0
+        ]
+      },
+      "properties": {
+        "station_name": "Santa Maria",
+        "provider_name": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    }
+  ]
+}
