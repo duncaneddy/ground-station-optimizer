@@ -1,3 +1,6 @@
+# Platform-specific files
+.DS_Store
+
 # IDE Files
 .idea/*
 .vscode/*

@@ -1,7 +1,20 @@
+import logging
 import streamlit as st
-from gsopt.app.widgets import station_selector, satellite_selector
 
-import gsopt.plots as plots
+from gsopt.models import ground_stations_from_dataframe, satellites_from_dataframe
+from gsopt.optimizer import MilpGSOptimizer
+from gsopt.plots import filter_cartopy_warnings
+from gsopt.app.widgets import *
+
+# Filter warnings
+filter_cartopy_warnings()
+
+# Enforce log-level and set log format to include timestamp
+logging.basicConfig(
+    datefmt='%Y-%m-%dT%H:%M:%S',
+    format='%(asctime)s.%(msecs)03dZ %(levelname)s [%(filename)s:%(lineno)d] %(message)s',
+    level=logging.INFO
+)
 
 st.set_page_config(layout="wide")
 
@@ -25,10 +38,11 @@ spacecraft = satellite_selector()
 
 st.markdown('## Optimization')
 
-# Compute contact windows
-# contacts = compute_contact_windows(stations, spacecraft)
+"""
+This section allows the user to define the optimization problem by selecting the constraints and objectives for the
+problem as well as setting other parameters for the optimization.
+"""
 
-# Define Constraints and Objective
-
+opt_problem_creator_widget()
 
 # Show results
