@@ -91,6 +91,17 @@ def milp(
     gsopt.compute_contacts()
     typer.echo(f"Contact computation complete. Found {len(gsopt.contacts)} contacts in {gsopt.contact_compute_time:.2f} seconds")
 
+    # Define optimization problem
+    gsopt.set_objective_maximize_contact_time()
+
+    typer.echo("Solving Optimization Problem...")
+    gsopt.solve()
+    typer.echo(f"Optimization complete. Total contact time: {gsopt.solve_time:.2f} seconds")
+
+    for c in gsopt.contacts:
+        typer.echo(f"Contact <Sc:{c.spacecraft_id},Station:{c.station_name},Provider:{c.provider_name}> | Duration: {c.t_duration:.2f} seconds - {gsopt.contact_nodes[c.id].value}")
+
+    typer.echo(f"Total Objective value: {gsopt.objective.expr()}")
 
 def main():
     app()

@@ -30,7 +30,7 @@ class MilpGSOptimizer(pk.block):
                  opt_window: OptimizationWindow | None,
                  stations: list[GroundStation] | None = None,
                  satellites: list[Satellite] | None = None,
-                 optimizer: OptimizerType = OptimizerType.Gurobi,
+                 optimizer_type: OptimizerType = OptimizerType.Gurobi,
                  ):
         super().__init__()
 
@@ -43,11 +43,13 @@ class MilpGSOptimizer(pk.block):
         self.elevation_min = 0.0
         self.contacts = None
 
-        # Set the optimizer
-        self.optimizer = optimizer
+        # Set the optimizer_type
+        self.optimizer_type = optimizer_type
 
         # MILP Model Initialization
         self.constraints = pk.constraint_list()
+        self.objective = pk.objective()
+        self.contact_nodes = pk.variable_dict()
 
 
     def set_optimization_window(self, opt_window):
@@ -81,18 +83,41 @@ class MilpGSOptimizer(pk.block):
 
         self.contact_compute_time = completion_time - precompute_time
 
+        # Populate the contact nodes
+        for contact in self.contacts:
+            self.contact_nodes[contact.id] = pk.variable(value=0, domain=pk.Binary)
+
+    def set_objective_maximize_contact_time(self):
+
+        if len(self.contact_nodes) == 0:
+            raise RuntimeError("No contact nodes found. Please compute contacts first.")
+
+        # Set optimization direction to maximize
+        self.objective.sense = pk.maximize
+        self.objective.expr  = 0
+
+        # Objective: Maximize the total contact time
+        for c in self.contacts:
+            self.objective.expr += c.t_duration * self.contact_nodes[c.id]
+
     def solve(self):
 
         # Create the solver
-        if self.optimizer == OptimizerType.Gurobi:
+        if self.optimizer_type == OptimizerType.Gurobi:
             solver = po.SolverFactory("gurobi")
         else:
             logger.info("Using backup COIN-OR CBC solver")
             solver = po.SolverFactory("cbc")
 
-        # try to solve with chosen optimizer
+        # Solve the problem
         presolve_time = time.perf_counter()
-        # self.solution = solver.solve(self)
+        self.solution = solver.solve(self)
         completion_time = time.perf_counter()
 
         self.solve_time = completion_time - presolve_time
+
+        if (self.solution.solver.status != po.SolverStatus.ok
+             or self.solution.solver.termination_condition != po.TerminationCondition.optimal):
+            raise RuntimeError(
+                f"Station Optimization Error: Solver Status {self.solution.solver.status} | TerminationCondition {self.solution.solver.termination_condition}"
+            )

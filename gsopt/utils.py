@@ -49,7 +49,6 @@ def create_station_objects(stations: list[GroundStation], elevation_min=0.0):
                 "properties": {
                     "constraints": bdm.AccessConstraints(elevation_min=elevation_min),
                     "station_name": sta.name,
-                    "station_id": f"{sta.provider}_{sta.name}",
                 },
                 "type": "Feature",
                 "geometry": {
@@ -58,6 +57,9 @@ def create_station_objects(stations: list[GroundStation], elevation_min=0.0):
                 },
             }
         ))
+
+        # Hack to patch in in provider name to Station object
+        gs[-1].__dict__['provider_name'] = sta.provider
 
     return gs
 
@@ -78,7 +80,13 @@ def create_spacecraft(satellites: list[Satellite]):
 #     return find_location_accesses(sc, loc, t_start, t_end)
 
 def compute_contacts(sc: bdm.Spacecraft, loc: bdm.Station, t_start: bh.Epoch, t_end: bh.Epoch):
-    return find_location_accesses(sc, loc, t_start, t_end)
+    contacts = find_location_accesses(sc, loc, t_start, t_end)
+
+    # Hack to patch in provider name to Contact object
+    for c in contacts:
+        c.__dict__['provider_name'] = loc.provider_name
+
+    return contacts
 
 def compute_all_contacts(satellites, stations, t_start, t_end, elevation_min, show_streamlit:bool=False):
 
