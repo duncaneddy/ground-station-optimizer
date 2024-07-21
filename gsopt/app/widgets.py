@@ -330,6 +330,7 @@ def satellite_selector():
             'object_name': str,
             'satcat_id': str,
             'epoch': datetime.datetime,
+            'altitude': float,
             'semi_major_axis': float,
             'eccentricity': float,
             'inclination': float,
@@ -363,8 +364,8 @@ def satellite_selector():
     sat_sso = sat_ele_cols[1].checkbox('Sun-Synchronous Orbit', value=False, key="sun_sync_orbit")
     inclination = sat_ele_cols[0].number_input('Inclination (deg)', min_value=0.0, max_value=180.0,
                                                value=bh.sun_sync_inclination(semi_major_axis, eccentricity,
-                                                                             use_degrees=True) if st.session_state.sun_sync_orbit else 0.0,
-                                               disabled=st.session_state.sun_sync_orbit,
+                                                                             use_degrees=True) if 'sun_sync_orbit' in st.session_state and st.session_state.sun_sync_orbit else 0.0,
+                                               disabled=st.session_state.sun_sync_orbit if 'sun_sync_orbit' in st.session_state else False,
                                                format='%.3f')
     right_ascension = sat_ele_cols[0].number_input('Right Ascension (deg)', min_value=0.0, max_value=360.0,
                                                    format='%.3f')
@@ -398,6 +399,7 @@ def satellite_selector():
                 'object_name': object_name,
                 'satcat_id': satcat_id,
                 'epoch': datetime.datetime.now(),
+                'altitude': (semi_major_axis - bh.R_EARTH)/1e3,
                 'semi_major_axis': semi_major_axis,
                 'eccentricity': eccentricity,
                 'inclination': inclination,
@@ -487,6 +489,7 @@ def satellite_selector():
             'object_name': str,
             'satcat_id': str,
             'epoch': datetime.datetime,
+            'altitude': float,
             'semi_major_axis': float,
             'eccentricity': float,
             'inclination': float,
@@ -552,7 +555,7 @@ def optimization_window_selector():
         opt_start=opt_start,
         opt_end=opt_end,
         sim_start=sim_start,
-        sim_duration=sim_duration
+        sim_end=sim_start + datetime.timedelta(days=sim_duration)
     )
 
     st.session_state['opt_window'] = opt_window
@@ -570,10 +573,9 @@ def opt_problem_creator_widget():
 
     solver_type = st.selectbox('Solver Type', ['MILP'], index=0)
 
-
-
     if st.button('Create Optimization Problem'):
         # Create Optimization problem
+
         st.session_state['gsopt'] = MilpGSOptimizer(
             opt_window=st.session_state['opt_window'],
             stations=models.ground_stations_from_dataframe(st.session_state['stations_df']),
@@ -581,11 +583,17 @@ def opt_problem_creator_widget():
         )
 
     # Compute contact windows
+    elevation_min = st.number_input('Minimum Elevation (deg)', min_value=0.0, max_value=90.0, value=10.0, step=0.1,)
+
     if st.button('Compute Contact Windows'):
         if 'gsopt' not in st.session_state:
             st.error('Please create the optimization problem before computing contacts.')
         else:
+            st.session_state['gsopt'].set_access_constraints(elevation_min)
             st.session_state.gsopt.compute_contacts()
+
+            st.markdown(f'Number of Contacts: {len(st.session_state.gsopt.contacts)}')
+
 
     # Define Constraints and Objective
 

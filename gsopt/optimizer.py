@@ -3,13 +3,16 @@ This module contains the GSOptimizer class, which is used to solve the ground st
 '''
 import logging
 import time
-import multiprocessing as mp
 from enum import Enum
 
-import brahe as bh
 import pyomo.kernel as pk
 import pyomo.opt as po
 
+import brahe as bh
+
+import streamlit as st
+
+from gsopt import utils
 from gsopt.models import GroundStation, Satellite, OptimizationWindow
 
 logger = logging.getLogger()
@@ -33,9 +36,12 @@ class MilpGSOptimizer(pk.block):
 
         # Default initializations
         self.solve_time = 0.0
+        self.contact_compute_time = 0.0
         self.opt_window = opt_window
-        self.stations   = None
-        self.satellites = None
+        self.stations   = stations
+        self.satellites = satellites
+        self.elevation_min = 0.0
+        self.contacts = None
 
         # Set the optimizer
         self.optimizer = optimizer
@@ -53,8 +59,27 @@ class MilpGSOptimizer(pk.block):
     def set_stations(self, stations):
         self.stations = stations
 
+    def set_access_constraints(self, elevation_min):
+        self.elevation_min = elevation_min
+
     def compute_contacts(self):
-        pass
+        precompute_time = time.perf_counter()
+
+        t_start = bh.Epoch(self.opt_window.sim_start)
+        t_end   = bh.Epoch(self.opt_window.sim_end)
+
+        self.contacts = utils.compute_all_contacts(
+            self.satellites,
+            self.stations,
+            t_start,
+            t_end,
+            self.elevation_min,
+            show_streamlit=True
+        )
+
+        completion_time = time.perf_counter()
+
+        self.contact_compute_time = completion_time - precompute_time
 
     def solve(self):
 

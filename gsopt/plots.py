@@ -1,4 +1,3 @@
-import warnings
 import math
 import shapely
 import cartopy.geodesic
@@ -7,14 +6,6 @@ import matplotlib.pyplot as plt
 
 import brahe as bh
 
-APPLIED_FILTER_WARNINGS = False
-
-def filter_cartopy_warnings():
-    global APPLIED_FILTER_WARNINGS
-
-    if not APPLIED_FILTER_WARNINGS:
-        warnings.filterwarnings("ignore", message="Approximating coordinate system")
-        APPLIED_FILTER_WARNINGS = True
 
 def select_color(owner):
     if owner == 'AWS':

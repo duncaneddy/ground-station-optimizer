@@ -3,7 +3,7 @@ from typing_extensions import Annotated
 
 import datetime
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator, model_serializer
+from pydantic import BaseModel, Field, ConfigDict, model_validator, model_serializer
 
 import polars as pl
 import brahe as bh
@@ -11,32 +11,10 @@ import brahe as bh
 
 class OptimizationWindow(BaseModel):
     opt_start: Annotated[datetime.datetime, Field(description="Start time of optimization window")]
-    opt_duration: Annotated[float | None, Field(description="Duration in seconds of optimization window")] = None
     opt_end: Annotated[datetime.datetime, Field(description="End time of optimization window")]
 
     sim_start: Annotated[datetime.datetime, Field(description="Start time of simulation window")]
-    sim_end: Annotated[datetime.datetime | None, Field(description="End time of simulation window")] = None
-    sim_duration: Annotated[float, Field(description="Duration in seconds")]
-
-    @field_validator('sim_end', mode='before', check_fields=False)
-    @classmethod
-    def validate_sim_end(cls, v: Any):
-        """
-        Set the end time based on the start time and duration
-        """
-
-        return v['sim_start'] + datetime.timedelta(seconds=v['sim_duration'])
-
-    @field_validator('opt_duration', mode='before', check_fields=False)
-    @classmethod
-    def validate_opt_duration(cls, v: Any):
-        """
-        Set the duration based on the start and end times
-        """
-
-        dt = v['opt_end'] - v['opt_start']
-
-        return dt.total_seconds()
+    sim_end: Annotated[datetime.datetime, Field(description="End time of simulation window")]
 
 
 class GroundStation(BaseModel):
@@ -44,7 +22,7 @@ class GroundStation(BaseModel):
     provider: str
     longitude: Annotated[float, Field(strict=True, ge=-180, le=180, description="Longitude in degrees")]
     latitude: Annotated[float, Field(strict=True, ge=-90, le=90, description="Latitude in degrees")]
-    altitude: Annotated[float, Field(description="Altitude in meters")]
+    altitude: Annotated[float, Field(description="Altitude in meters")] = 0.0
 
     @property
     def lon(self):
@@ -66,11 +44,11 @@ def ground_stations_from_dataframe(df: pl.DataFrame) -> list[GroundStation]:
     stations = []
     for sta in df.iter_rows(named=True):
         stations.append(GroundStation(
-            name=sta['location_name'],
-            provider=sta['location_id'],
-            longitude=sta['longitude_deg'],
-            latitude=sta['latitude_deg'],
-            altitude=sta['altitude_m']
+            name=sta['station_name'],
+            provider=sta['provider_name'],
+            longitude=sta['longitude'],
+            latitude=sta['latitude'],
+            altitude=sta['altitude']
         ))
 
     return stations
@@ -83,20 +61,6 @@ class Satellite(BaseModel):
     name: str
     tle_line1: str
     tle_line2: str
-    tle: bh.TLE | None = None
-
-    @field_validator('tle', mode='before', check_fields=False)
-    @classmethod
-    def validate_tle(cls, v: Any):
-        """
-        Initialize the TLE object from the TLE line 1 and line 2 strings
-        """
-        if 'tle_line1' not in v:
-            raise ValueError('tle_line1 is required')
-        if 'tle_line2' not in v:
-            raise ValueError('tle_line2 is required')
-
-        return bh.TLE(v['tle_line1'], v['tle_line2'])
 
     @model_serializer
     def ser_model(self) -> Dict[str, Any]:
