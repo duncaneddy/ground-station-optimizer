@@ -8,8 +8,10 @@ import time
 import datetime
 import warnings
 
-
+import polars as pl
 import multiprocessing as mp
+
+from typing import Dict, Any
 
 import brahe as bh
 import brahe.data_models as bdm
@@ -157,3 +159,86 @@ def contact_list_to_dataframe(contacts: list[bdm.Contact]):
 
     # Convert the list of dictionaries to a Polars DataFrame
     return contact_dicts
+
+
+def ground_stations_from_dataframe(df: pl.DataFrame) -> list[GroundStation]:
+    """
+    Create a list of GroundStation objects from a Polars DataFrame
+    """
+    stations = []
+    for sta in df.iter_rows(named=True):
+        stations.append(GroundStation(
+            name=sta['station_name'],
+            provider=sta['provider_name'],
+            longitude=sta['longitude'],
+            latitude=sta['latitude'],
+            altitude=sta['altitude']
+        ))
+
+    return stations
+
+
+def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]:
+    """
+    Create a list of GroundStation objects from a GeoJSON dictionary
+    """
+    stations = []
+    for feature in geojson['features']:
+        properties = feature['properties']
+        geometry = feature['geometry']
+
+        if geometry['type'] != 'Point':
+            raise ValueError("Only Point geometries are supported")
+
+        if 'provider_name' not in properties:
+            raise ValueError("Missing 'provider_name' property")
+
+        if 'station_name' not in properties:
+            raise ValueError("Missing 'station_name' property")
+
+        stations.append(GroundStation(
+            name=properties['station_name'],
+            provider=properties['provider_name'],
+            longitude=geometry['coordinates'][0],
+            latitude=geometry['coordinates'][1],
+            altitude=geometry['coordinates'][2] if len(geometry['coordinates']) > 2 else 0.0
+        ))
+
+    return stations
+
+
+
+def satellites_from_dataframe(df: pl.DataFrame) -> list[Satellite]:
+    """
+    Create a list of Satellite objects from a Polars DataFrame
+    """
+    satellites = []
+    for sat in df.iter_rows(named=True):
+        satellites.append(Satellite(
+            satcat_id=sat['satcat_id'],
+            name=sat['object_name'],
+            tle_line1=sat['tle_line1'],
+            tle_line2=sat['tle_line2']
+        ))
+
+    return satellites
+
+
+def satellites_from_constellation_str(constellation: str, tles: dict) -> list[Satellite]:
+    """
+    Create a list of Satellite objects from a constellation string
+    """
+
+    satellites = []
+
+    for tle in tles:
+        if constellation in tle['object_name']:
+            satellites.append(Satellite(
+                satcat_id=tle['satcat_id'],
+                name=tle['object_name'],
+                tle_line1=tle['tle_line1'],
+                tle_line2=tle['tle_line2']
+            ))
+
+    return satellites
+

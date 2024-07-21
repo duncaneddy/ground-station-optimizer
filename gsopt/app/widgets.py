@@ -9,6 +9,7 @@ import brahe as bh
 import polars as pl
 import streamlit as st
 
+from gsopt import utils
 from gsopt.ephemeris import get_satcat_df
 import gsopt.plots as plots
 import gsopt.models as models
@@ -571,15 +572,15 @@ def opt_problem_creator_widget():
     This section allows the user to define the optimization
     """)
 
-    solver_type = st.selectbox('Solver Type', ['MILP'], index=0)
+    opt_type = st.selectbox('Optimization Type', ['MILP'], index=0)
 
     if st.button('Create Optimization Problem'):
         # Create Optimization problem
 
         st.session_state['gsopt'] = MilpGSOptimizer(
             opt_window=st.session_state['opt_window'],
-            stations=models.ground_stations_from_dataframe(st.session_state['stations_df']),
-            satellites=models.satellites_from_dataframe(st.session_state['satellites_df'])
+            stations=utils.ground_stations_from_dataframe(st.session_state['stations_df']),
+            satellites=utils.satellites_from_dataframe(st.session_state['satellites_df'])
         )
 
     # Compute contact windows

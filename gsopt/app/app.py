@@ -3,8 +3,6 @@ import shutil
 
 import streamlit as st
 
-from gsopt.models import ground_stations_from_dataframe, satellites_from_dataframe
-from gsopt.optimizer import MilpGSOptimizer
 from gsopt.utils import filter_warnings
 from gsopt.app.widgets import *
 
@@ -75,10 +73,7 @@ if st.button("Update EOP Data"):
 station_selector()
 
 # Define spacecraft
-spacecraft = satellite_selector()
-
-# Create Problem
-# problem = GSOpt(stations, spacecraft)
+satellite_selector()
 
 st.markdown('## Optimization')
 

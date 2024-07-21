@@ -1,3 +1,7 @@
+[global]
+# Supress warning when multiprocessing and running CLI
+showWarningOnDirectExecution = false
+
 [server]
 port = 8080
 runOnSave = true
