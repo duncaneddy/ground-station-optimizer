@@ -101,3 +101,15 @@ The application can now be run using the following command:
 ```bash
 streamlit run ./gsopt/app.py
 ```
+
+## Citation & Acknowledgement
+
+If data or software from this repository is used in a publication, please cite the associated paper:
+
+```
+TODO
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

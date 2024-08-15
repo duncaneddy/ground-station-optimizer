@@ -11,8 +11,8 @@
         ]
       },
       "properties": {
-        "station_name": "Utqiagvik",
-        "provider_name": "Atlas",
+        "name": "Utqiagvik",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -26,8 +26,8 @@
         ]
       },
       "properties": {
-        "station_name": "Dundee",
-        "provider_name": "Atlas",
+        "name": "Dundee",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -41,8 +41,8 @@
         ]
       },
       "properties": {
-        "station_name": "Chitose",
-        "provider_name": "Atlas",
+        "name": "Chitose",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -56,8 +56,8 @@
         ]
       },
       "properties": {
-        "station_name": "Mojave",
-        "provider_name": "Atlas",
+        "name": "Mojave",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -71,8 +71,8 @@
         ]
       },
       "properties": {
-        "station_name": "Dubai",
-        "provider_name": "Atlas",
+        "name": "Dubai",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -86,8 +86,8 @@
         ]
       },
       "properties": {
-        "station_name": "Paumalu",
-        "provider_name": "Atlas",
+        "name": "Paumalu",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -101,8 +101,8 @@
         ]
       },
       "properties": {
-        "station_name": "Harmon",
-        "provider_name": "Atlas",
+        "name": "Harmon",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -116,8 +116,8 @@
         ]
       },
       "properties": {
-        "station_name": "Sunyani",
-        "provider_name": "Atlas",
+        "name": "Sunyani",
+        "provider": "Atlas",
         "frequency_bands": ["S"]
       }
     },
@@ -131,8 +131,8 @@
         ]
       },
       "properties": {
-        "station_name": "Mwulire",
-        "provider_name": "Atlas",
+        "name": "Mwulire",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -146,8 +146,8 @@
         ]
       },
       "properties": {
-        "station_name": "Tahiti",
-        "provider_name": "Atlas",
+        "name": "Tahiti",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -161,8 +161,8 @@
         ]
       },
       "properties": {
-        "station_name": "Awarua",
-        "provider_name": "Atlas",
+        "name": "Awarua",
+        "provider": "Atlas",
         "frequency_bands": ["S", "X"]
       }
     }

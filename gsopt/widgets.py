@@ -13,7 +13,7 @@ from gsopt import utils
 from gsopt.ephemeris import get_satcat_df
 import gsopt.plots as plots
 import gsopt.models as models
-from gsopt.optimizer import MilpGSOptimizer
+from gsopt.milp_optimizer import MilpGSOptimizer
 
 logger = logging.getLogger()
 
@@ -42,12 +42,12 @@ def freq_enabled(freq_list: list[str]):
     return required_freq <= set([f.lower() for f in freq_list])
 
 
-def add_provider_selector(provider_name: str):
+def add_provider_selector(provider: str):
     # Create Markdown
-    provider_enabled = st.checkbox(f'**{provider_name.capitalize()}**', value=True)
+    provider_enabled = st.checkbox(f'**{provider.capitalize()}**', value=True)
 
     # Load Station File
-    geojson = json.load(open(pathlib.Path(f'./data/groundstations/{provider_name}.json'), 'r'))
+    geojson = json.load(open(pathlib.Path(f'./data/groundstations/{provider}.json'), 'r'))
 
     stations = []
 
@@ -60,8 +60,8 @@ def add_provider_selector(provider_name: str):
 
             # We'll do some optimistic parsing here because we control the schema
             try:
-                station_name = feature['properties']['station_name']
-                provider_name = feature['properties']['provider_name']
+                name = feature['properties']['name']
+                provider = feature['properties']['provider']
                 lon, lat = feature['geometry']['coordinates'][:2]
                 alt = feature['geometry']['coordinates'][2] if len(feature['geometry']['coordinates']) > 2 else 0.0
                 frequency_bands = feature['properties']['frequency_bands']
@@ -70,11 +70,11 @@ def add_provider_selector(provider_name: str):
                 continue
 
             stations.append((
-                cols[idx % 5].checkbox(f'{station_name.capitalize()}', key=f'checkbox_{provider_name}_{station_name}',
+                cols[idx % 5].checkbox(f'{name.capitalize()}', key=f'checkbox_{provider}_{name}',
                                        value=freq_enabled(frequency_bands) and provider_enabled,
                                        disabled=not (freq_enabled(frequency_bands)) and provider_enabled),
-                station_name,
-                provider_name,
+                name,
+                provider,
                 lon,
                 lat,
                 alt
@@ -94,8 +94,8 @@ def station_selector():
 
     if 'stations_df' not in st.session_state:
         st.session_state['stations_df'] = pl.DataFrame({}, schema={
-            'station_name': str,
-            'provider_name': str,
+            'name': str,
+            'provider': str,
             'longitude': float,
             'latitude': float,
             'altitude': float,
@@ -129,8 +129,8 @@ def station_selector():
         for station in station_buttons:
             if station[0]:
                 new_loc = pl.DataFrame({
-                    'station_name': station[1],
-                    'provider_name': station[2],
+                    'name': station[1],
+                    'provider': station[2],
                     'longitude': station[3],
                     'latitude': station[4],
                     'altitude': station[5]
@@ -145,23 +145,23 @@ def station_selector():
     st.markdown('This section allows you to define a custom ground station by providing the coordinates and metadata.'
                 'The provider name is required to enable optimization of provider selection.')
 
-    station_name = st.text_input('Station Name')
-    provider_name = st.text_input('Provider Name')
+    name = st.text_input('Station Name')
+    provider = st.text_input('Provider Name')
     lon = st.number_input('Longitude (deg)', min_value=-180.0, max_value=180.0, value=0.0, format='%.3f')
     lat = st.number_input('Latitude (deg)', min_value=-90.0, max_value=90.0, value=0.0, format='%.3f')
     alt = st.number_input('Altitude (m)', value=0.0, format='%.3f')
 
     if st.button('Add Location'):
-        if station_name == '':
+        if name == '':
             st.error('Please provide a name for the station')
 
-        if provider_name == '':
+        if provider == '':
             st.error('Please provide a provider name for the station')
 
         else:
             new_loc = pl.DataFrame({
-                'station_name': station_name,
-                'provider_name': provider_name,
+                'name': name,
+                'provider': provider,
                 'longitude': lon,
                 'latitude': lat,
                 'altitude': alt
@@ -190,8 +190,8 @@ def station_selector():
                 ]
               },
               "properties": {
-                "station_name": "MyAwesomeStation",
-                "provider_name": "MyAwesomeProvider"
+                "name": "MyAwesomeStation",
+                "provider": "MyAwesomeProvider"
               }
             }
           ]
@@ -201,11 +201,11 @@ def station_selector():
     st_geojson_cols = st.columns(2)
 
     with st_geojson_cols[0]:
-        station_name_property_field = st.text_input('Station Name Property Field', value='',
+        name_property_field = st.text_input('Station Name Property Field', value='',
                                                     help='The field in the GeoJSON file that contains the station name, if any')
 
     with st_geojson_cols[1]:
-        provider_name_property_field = st.text_input('Provider Name Property Field', value='',
+        provider_property_field = st.text_input('Provider Name Property Field', value='',
                                                      help='The field in the GeoJSON file that container the provider name, if any')
     geojson_file = st.file_uploader('Upload GeoJSON File', accept_multiple_files=False)
 
@@ -225,25 +225,25 @@ def station_selector():
                             st.error(f'Feature {idx} does not contain a "properties" field.')
                             break
 
-                        if 'provider_name' in feature['properties']:
-                            st.error(f'Feature {idx} does not contain a "provider_name" field.')
+                        if 'provider' in feature['properties']:
+                            st.error(f'Feature {idx} does not contain a "provider" field.')
 
-                        if 'properties' in feature and station_name_property_field in feature['properties']:
-                            station_name = feature['properties'][station_name_property_field]
+                        if 'properties' in feature and name_property_field in feature['properties']:
+                            name = feature['properties'][name_property_field]
                         else:
-                            station_name = f"GeoJSON Point ({lon:.3f}, {lat:.3f})"
+                            name = f"GeoJSON Point ({lon:.3f}, {lat:.3f})"
 
-                        if 'properties' in feature and provider_name_property_field in feature['properties']:
-                            provider_name = feature['properties'][provider_name_property_field]
+                        if 'properties' in feature and provider_property_field in feature['properties']:
+                            provider = feature['properties'][provider_property_field]
                         else:
-                            provider_name = f"GeoJSON File"
+                            provider = f"GeoJSON File"
 
                         alt = feature['geometry']['coordinates'][2] if len(
                             feature['geometry']['coordinates']) > 2 else 0.0
 
                         new_loc = pl.DataFrame({
-                            'station_name': station_name,
-                            'provider_name': provider_name,
+                            'name': name,
+                            'provider': provider,
                             'longitude': float(lon),
                             'latitude': float(lat),
                             'altitude': float(alt)
@@ -277,8 +277,8 @@ def station_selector():
 
     if st.button('Clear All Stations'):
         st.session_state['stations_df'] = pl.DataFrame({}, schema={
-            'station_name': str,
-            'provider_name': str,
+            'name': str,
+            'provider': str,
             'longitude': float,
             'latitude': float,
             'altitude': float,
@@ -301,7 +301,7 @@ def station_selector():
     with st_plot_cols[2]:
         plot_opacity = st.slider('Plot Opacity', min_value=0.0, max_value=1.0, value=0.5, step=0.01)
 
-    plot_stations = [(row['longitude'], row['latitude'], row['provider_name']) for row in
+    plot_stations = [(row['longitude'], row['latitude'], row['provider']) for row in
                      st.session_state['stations_df'].iter_rows(named=True)]
     gs_fig, gs_ax = plots.plot_stations(plot_stations, elevation_min=plot_ele, alt=plot_alt * 1e3, opacity=plot_opacity)
 

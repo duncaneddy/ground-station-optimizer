@@ -48,7 +48,7 @@ def create_station_objects(stations: list[GroundStation], elevation_min=0.0):
             **{
                 "properties": {
                     "constraints": bdm.AccessConstraints(elevation_min=elevation_min),
-                    "station_name": sta.name,
+                    "name": sta.name,
                 },
                 "type": "Feature",
                 "geometry": {
@@ -59,7 +59,7 @@ def create_station_objects(stations: list[GroundStation], elevation_min=0.0):
         ))
 
         # Hack to patch in in provider name to Station object
-        gs[-1].__dict__['provider_name'] = sta.provider
+        gs[-1].__dict__['provider'] = sta.provider
 
     return gs
 
@@ -84,7 +84,7 @@ def compute_contacts(sc: bdm.Spacecraft, loc: bdm.Station, t_start: bh.Epoch, t_
 
     # Hack to patch in provider name to Contact object
     for c in contacts:
-        c.__dict__['provider_name'] = loc.provider_name
+        c.__dict__['provider'] = loc.provider
 
     return contacts
 
@@ -151,7 +151,7 @@ def contact_list_to_dataframe(contacts: list[bdm.Contact]):
         contact_dicts.append({
             "contact_id": contact.id,
             "location_id": contact.station_id,
-            "location_name": contact.station_name,
+            "location_name": contact.name,
             "satcat_id": contact.spacecraft_id,
             'longitude': contact.center[0],
             'latitude': contact.center[1],
@@ -176,8 +176,8 @@ def ground_stations_from_dataframe(df: pl.DataFrame) -> list[GroundStation]:
     stations = []
     for sta in df.iter_rows(named=True):
         stations.append(GroundStation(
-            name=sta['station_name'],
-            provider=sta['provider_name'],
+            name=sta['name'],
+            provider=sta['provider'],
             longitude=sta['longitude'],
             latitude=sta['latitude'],
             altitude=sta['altitude']
@@ -198,15 +198,15 @@ def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]
         if geometry['type'] != 'Point':
             raise ValueError("Only Point geometries are supported")
 
-        if 'provider_name' not in properties:
-            raise ValueError("Missing 'provider_name' property")
+        if 'provider' not in properties:
+            raise ValueError("Missing 'provider' property")
 
-        if 'station_name' not in properties:
-            raise ValueError("Missing 'station_name' property")
+        if 'name' not in properties:
+            raise ValueError("Missing 'name' property")
 
         stations.append(GroundStation(
-            name=properties['station_name'],
-            provider=properties['provider_name'],
+            name=properties['name'],
+            provider=properties['provider'],
             longitude=geometry['coordinates'][0],
             latitude=geometry['coordinates'][1],
             altitude=geometry['coordinates'][2] if len(geometry['coordinates']) > 2 else 0.0

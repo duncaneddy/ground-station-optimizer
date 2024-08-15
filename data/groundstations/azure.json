@@ -12,8 +12,8 @@
         ]
       },
       "properties": {
-        "station_name": "Quincy",
-        "provider_name": "Azure",
+        "name": "Quincy",
+        "provider": "Azure",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -28,8 +28,8 @@
         ]
       },
       "properties": {
-        "station_name": "Longovilo",
-        "provider_name": "Azure",
+        "name": "Longovilo",
+        "provider": "Azure",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -44,8 +44,8 @@
         ]
       },
       "properties": {
-        "station_name": "Singapore",
-        "provider_name": "Azure",
+        "name": "Singapore",
+        "provider": "Azure",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -60,8 +60,8 @@
         ]
       },
       "properties": {
-        "station_name": "Johannesburg",
-        "provider_name": "Azure",
+        "name": "Johannesburg",
+        "provider": "Azure",
         "frequency_bands": ["S", "X"]
       }
     },
@@ -76,8 +76,8 @@
         ]
       },
       "properties": {
-        "station_name": "Gavle",
-        "provider_name": "Azure",
+        "name": "Gavle",
+        "provider": "Azure",
         "frequency_bands": ["S", "X"]
       }
     }

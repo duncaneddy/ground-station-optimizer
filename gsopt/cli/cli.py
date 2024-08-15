@@ -10,7 +10,7 @@ import brahe as bh
 from gsopt import utils
 from gsopt.ephemeris import get_tles
 from gsopt.models import OptimizationWindow
-from gsopt.optimizer import MilpGSOptimizer
+from gsopt.milp_optimizer import MilpGSOptimizer
 from gsopt.utils import satellites_from_constellation_str, ground_stations_from_geojson
 
 app = typer.Typer(no_args_is_help=True)
@@ -99,7 +99,7 @@ def milp(
     typer.echo(f"Optimization complete. Total contact time: {gsopt.solve_time:.2f} seconds")
 
     for c in gsopt.contacts:
-        typer.echo(f"Contact <Sc:{c.spacecraft_id},Station:{c.station_name},Provider:{c.provider_name}> | Duration: {c.t_duration:.2f} seconds - {gsopt.contact_nodes[c.id].value}")
+        typer.echo(f"Contact <Sc:{c.spacecraft_id},Station:{c.name},Provider:{c.provider}> | Duration: {c.t_duration:.2f} seconds - {gsopt.contact_nodes[c.id].value}")
 
     typer.echo(f"Total Objective value: {gsopt.objective.expr()}")
 

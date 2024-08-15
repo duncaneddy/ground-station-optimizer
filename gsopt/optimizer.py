@@ -1,123 +1,86 @@
 '''
-This module contains the GSOptimizer class, which is used to solve the ground station optimization problem.
+This module contains the base GroundStationOptimizer class, which allows for the definition of
+the problem of ground station selection and optimization.
 '''
-import logging
-import time
 from enum import Enum
+from pathlib import Path
 
-import pyomo.kernel as pk
-import pyomo.opt as po
+from rich import table
+import logging
+from abc import abstractmethod, ABCMeta
 
-import brahe as bh
-
-import streamlit as st
-
-from gsopt import utils
-from gsopt.models import GroundStation, Satellite, OptimizationWindow
+from gsopt.models import GroundStation, GroundStationNetwork, Satellite, OptimizationWindow
 
 logger = logging.getLogger()
 
+class SolverStatus(Enum):
+    """
+    Enumeration of possible solver statuses.
+    """
+    NOT_SOLVED = 0
+    SOLVED = 1
+    ERROR = 2
 
-# Enumeration of available optimizers
-class OptimizerType(Enum):
-    Gurobi = 'gurobi'
-    Cbc = 'cbc'
 
+class GroundStationOptimizer(metaclass=ABCMeta):
 
-class MilpGSOptimizer(pk.block):
-
-    def __init__(self,
-                 opt_window: OptimizationWindow | None,
-                 stations: list[GroundStation] | None = None,
-                 satellites: list[Satellite] | None = None,
-                 optimizer_type: OptimizerType = OptimizerType.Gurobi,
-                 ):
+    def __init__(self, opt_window: OptimizationWindow):
         super().__init__()
 
-        # Default initializations
+        self.opt_window = opt_window
+
+        # Problem inputs
+        self.satellites = []
+        self.networks = []
+
+        # Workign variables
+        self.contacts = []
+
+        # Common optimization problem variables
+        self.solver_status = SolverStatus.NOT_SOLVED
         self.solve_time = 0.0
         self.contact_compute_time = 0.0
-        self.opt_window = opt_window
-        self.stations   = stations
-        self.satellites = satellites
-        self.elevation_min = 0.0
-        self.contacts = None
 
-        # Set the optimizer_type
-        self.optimizer_type = optimizer_type
+    def add_satellite(self, satellite: Satellite):
+        self.satellites.append(satellite)
 
-        # MILP Model Initialization
-        self.constraints = pk.constraint_list()
-        self.objective = pk.objective()
-        self.contact_nodes = pk.variable_dict()
+    def add_network(self, network: GroundStationNetwork):
+        """
+        Add a station network to the optimizer.
+        """
+        self.networks.append(network)
 
+    def get_network(self, key: str | int):
+        """
+        Get a network by name or index.
+        """
+        if isinstance(key, int):
+            return self.networks[key]
+        elif isinstance(key, str):
+            for network in self.networks:
+                if network.name == key:
+                    return network
 
-    def set_optimization_window(self, opt_window):
-        self.opt_window = opt_window
-
-    def set_satellites(self, satellites):
-        self.satellites = satellites
-
-    def set_stations(self, stations):
-        self.stations = stations
-
-    def set_access_constraints(self, elevation_min):
-        self.elevation_min = elevation_min
+            raise ValueError(f"Network with name {key} not found")
+        else:
+            raise ValueError("Invalid key type")
 
     def compute_contacts(self):
-        precompute_time = time.perf_counter()
+        """
+        Compute all contacts between the satellites and ground stations.
+        """
+        pass
 
-        t_start = bh.Epoch(self.opt_window.sim_start)
-        t_end   = bh.Epoch(self.opt_window.sim_end)
+        # Settings for elevation thresholds
+        #
 
-        self.contacts = utils.compute_all_contacts(
-            self.satellites,
-            self.stations,
-            t_start,
-            t_end,
-            self.elevation_min,
-            show_streamlit=True
-        )
-
-        completion_time = time.perf_counter()
-
-        self.contact_compute_time = completion_time - precompute_time
-
-        # Populate the contact nodes
-        for contact in self.contacts:
-            self.contact_nodes[contact.id] = pk.variable(value=0, domain=pk.Binary)
-
-    def set_objective_maximize_contact_time(self):
-
-        if len(self.contact_nodes) == 0:
-            raise RuntimeError("No contact nodes found. Please compute contacts first.")
-
-        # Set optimization direction to maximize
-        self.objective.sense = pk.maximize
-        self.objective.expr  = 0
-
-        # Objective: Maximize the total contact time
-        for c in self.contacts:
-            self.objective.expr += c.t_duration * self.contact_nodes[c.id]
-
+    @abstractmethod
     def solve(self):
+        pass
 
-        # Create the solver
-        if self.optimizer_type == OptimizerType.Gurobi:
-            solver = po.SolverFactory("gurobi")
-        else:
-            logger.info("Using backup COIN-OR CBC solver")
-            solver = po.SolverFactory("cbc")
+    @abstractmethod
+    def write_solution(self, output_file: Path):
+        pass
 
-        # Solve the problem
-        presolve_time = time.perf_counter()
-        self.solution = solver.solve(self)
-        completion_time = time.perf_counter()
-
-        self.solve_time = completion_time - presolve_time
-
-        if (self.solution.solver.status != po.SolverStatus.ok
-             or self.solution.solver.termination_condition != po.TerminationCondition.optimal):
-            raise RuntimeError(
-                f"Station Optimization Error: Solver Status {self.solution.solver.status} | TerminationCondition {self.solution.solver.termination_condition}"
-            )
+    def __rich_console__(self):
+        raise NotImplementedError
