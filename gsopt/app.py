@@ -1,10 +1,9 @@
-import logging
 import shutil
 
 import streamlit as st
 
 from gsopt.utils import filter_warnings
-from gsopt.app.widgets import *
+from gsopt.widgets import *
 
 # Filter warnings
 filter_warnings()
