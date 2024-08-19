@@ -28,7 +28,6 @@ RUN pip install --no-cache-dir .
 
 # Make port 8080 available to the world outside this container
 EXPOSE 8080
-EXPOSE 80
 
 # Enture the Streamlit app is healthy
 HEALTHCHECK CMD curl --fail http://localhost:8080/_stcore/health
