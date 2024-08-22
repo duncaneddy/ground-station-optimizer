@@ -1,7 +1,7 @@
 # Ground Station Optimizer
 
 This repository provides an application for determining the optimal ground station provider and station network for a 
-given satellite mission. It contains the code and examples supporting the associated paper presented at the 2024 IEEE 
+given satellite mission. It contains the code and examples supporting the associated paper presented at the 2025 IEEE 
 Aerospace Conference.
 
 Ground Station Optimizer helps satellite operators determine the optimal ground station provider and station network for
