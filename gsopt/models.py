@@ -61,7 +61,8 @@ class GroundStation():
                  altitude: float = 0.0,
                  id: str | None = None,
                  provider: str | None = None,
-                 elevation_min: float = 0.0):
+                 elevation_min: float = 0.0,
+                 datarate: float = 0.0):
 
         if not name:
             raise ValueError("Ground station must have a name")
@@ -93,6 +94,9 @@ class GroundStation():
         self.per_satellite_license_cost = 0.0
         self.first_time_use_cost = 0.0
 
+        # Set data rate
+        self.datarate = datarate
+
     @classmethod
     def from_geojson(cls, data: dict):
         """
@@ -117,7 +121,8 @@ class GroundStation():
             longitude=geometry['coordinates'][0],
             latitude=geometry['coordinates'][1],
             altitude=geometry['coordinates'][2] if len(geometry['coordinates']) > 2 else 0.0,
-            elevation_min=properties['elevation_min'] if 'elevation_min' in properties else 0.0
+            elevation_min=properties['elevation_min'] if 'elevation_min' in properties else 0.0,
+            datarate=properties['datarate'] if 'datarate' in properties else 0.0
         )
 
     @property
@@ -157,7 +162,8 @@ class GroundStation():
             "properties": {
                 "name": self.name,
                 "provider": self.provider,
-                "elevation_min": self.elevation_min
+                "elevation_min": self.elevation_min,
+                "datarate": self.datarate
             }
         }
 
@@ -177,6 +183,8 @@ class GroundStation():
         tbl.add_row("Cost per Minute", f"${self.cost_per_minute:.2f}")
         tbl.add_row("Per Satellite License Cost", f"${self.per_satellite_license_cost:.2f}")
         tbl.add_row("First Time Use Cost", f"${self.first_time_use_cost:.2f}")
+        tbl.add_row("Data Rate [Mbps]", f"{self.datarate * 1e-6:.3f}")
+
 
         yield tbl
 
@@ -274,7 +282,7 @@ class GroundStationNetwork():
             - key (str): ID of specific station to update
         """
 
-        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'first_time_use_cost']:
+        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'first_time_use_cost', 'elevation_min', 'datarate']:
             raise ValueError(f"\"{property}\" is not a settable property")
 
         if value < 0.0:
@@ -328,7 +336,7 @@ class GroundStationNetwork():
 
 
 class Satellite():
-    def __init__(self, satcat_id: str | int, name: str, tle_line1: str, tle_line2: str, id: str = None):
+    def __init__(self, satcat_id: str | int, name: str, tle_line1: str, tle_line2: str, id: str = None, datarate: float = 0.0):
 
         if not satcat_id:
             raise ValueError("Satellite must have a satcat_id")
@@ -359,8 +367,11 @@ class Satellite():
 
         self.tle = TLE(self.tle_line1, self.tle_line2)
 
+        # Set data rate
+        self.datarate = datarate
+
     @classmethod
-    def from_elements(cls, satcat_id: str | int, name: str, epoch: Epoch, sma: float, ecc: float, inc: float, raan: float, argp: float, mean_anomaly: float, is_sso: bool = False):
+    def from_elements(cls, satcat_id: str | int, name: str, epoch: Epoch, sma: float, ecc: float, inc: float, raan: float, argp: float, mean_anomaly: float, is_sso: bool = False, datarate: float = 0.0):
         """
         Initialize Satellite Object from orbital elements
 
@@ -391,7 +402,7 @@ class Satellite():
             norad_id=int(satcat_id),
         )
 
-        return cls(satcat_id, name, tle_line1, tle_line2)
+        return cls(satcat_id, name, tle_line1, tle_line2, datarate=datarate)
 
     def as_brahe_model(self):
         return bdm.Spacecraft(
@@ -412,7 +423,7 @@ class Satellite():
         }
 
     def __str__(self):
-        return f"Satellite({self.satcat_id}, {self.name}, {self.tle.a:.3f} km, {self.tle.e:.3f}, {self.tle.i:.3f} deg, {self.tle.RAAN:.3f} deg, {self.tle.w:.3f} deg, {self.tle.M:.3f} deg)"
+        return f"Satellite({self.satcat_id}, {self.name}, {self.tle.a:.3f} km, {self.tle.e:.3f}, {self.tle.i:.3f} deg, {self.tle.RAAN:.3f} deg, {self.tle.w:.3f} deg, {self.tle.M:.3f} deg, {self.datarate*1e-6:.3f} Mbps)"
 
     def __repr__(self):
         return self.__str__()
@@ -441,12 +452,28 @@ class Contact():
         # Set window values
         self.t_start = Epoch(contact.t_start)
         self.t_end = Epoch(contact.t_end)
-        self.duration = contact.t_duration
+        self.t_duration = contact.t_duration
 
         # Set cost values
 
-        self.cost = station.cost_per_pass + self.duration*60*station.cost_per_minute
+        self.cost = station.cost_per_pass + self.t_duration*60*station.cost_per_minute
         self.cost_per_pass = station.cost_per_pass
         self.cost_per_minute = station.cost_per_minute
+
+        # Set data transfer values
+        self.datarate = min(station.datarate, satellite.datarate) # Get the minimum of the two data rates
+        self.data_volume = self.datarate * self.t_duration
+
+    @property
+    def lon(self):
+        return self.longitude
+
+    @property
+    def lat(self):
+        return self.latitude
+
+    @property
+    def alt(self):
+        return self.altitude
 
 

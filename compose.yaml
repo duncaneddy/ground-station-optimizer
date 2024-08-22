@@ -4,4 +4,6 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
+      - ./data:/data
+    environment:
+      IUDEX_API_KEY: ${IUDEX_API_KEY}

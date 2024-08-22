@@ -11,16 +11,17 @@ import streamlit as st
 
 from gsopt import utils
 from gsopt.ephemeris import get_satcat_df
+from gsopt.models import GroundStationNetwork, GroundStation, Satellite, Contact, OptimizationWindow
 import gsopt.plots as plots
-import gsopt.models as models
-from gsopt.milp_optimizer import MilpGSOptimizer
+
+from gsopt.milp_optimizer import MilpOptimizer
 
 logger = logging.getLogger()
 
 # Constants of interest
 ALL_FREQUENCIES = ['uhf', 'l', 's', 'x', 'ka']
-CONSTELLATIONS = ['YAM', 'UMBRA', 'SKYSAT', 'ICEYE', 'FLOCK', 'HAWK', 'CAPELLA', 'LEGION', 'WORLDVIEW', 'GEOEYE',
-                  'NUSAT']
+CONSTELLATIONS = sorted(['YAM', 'UMBRA', 'SKYSAT', 'ICEYE', 'FLOCK', 'HAWK', 'CAPELLA', 'LEGION', 'WORLDVIEW', 'GEOEYE',
+                  'NUSAT'])
 
 
 # Get provider names as file names from ./data/groundstations
@@ -83,6 +84,63 @@ def add_provider_selector(provider: str):
     return stations
 
 
+def contact_list_to_dataframe(contacts: list[Contact]):
+    # Create a list of  dictionaries to hold the contact data
+    contact_dicts = []
+
+    # Iterate over the contacts and extract the relevant data
+    for contact in contacts:
+        contact_dicts.append({
+            "id": contact.id,
+            "location_id": contact.station_id,
+            "location_name": contact.name,
+            "satellite_id": contact.satellite_id,
+            "sattellite_name": contact.satellite_name,
+            'longitude': contact.lon,
+            'latitude': contact.lat,
+            'altitude': contact.alt,
+            "t_start": contact.t_start.to_datetime(),
+            "t_end": contact.t_end.to_datetime(),
+            "t_duration": contact.t_duration,
+        })
+
+    # Convert the list of dictionaries to a Polars DataFrame
+    return contact_dicts
+
+
+def ground_stations_from_dataframe(df: pl.DataFrame) -> list[GroundStation]:
+    """
+    Create a list of GroundStation objects from a Polars DataFrame
+    """
+    stations = []
+    for sta in df.iter_rows(named=True):
+        stations.append(GroundStation(
+            name=sta['name'],
+            provider=sta['provider'],
+            longitude=sta['longitude'],
+            latitude=sta['latitude'],
+            altitude=sta['altitude']
+        ))
+
+    return stations
+
+def satellites_from_dataframe(df: pl.DataFrame) -> list[Satellite]:
+    """
+    Create a list of Satellite objects from a Polars DataFrame
+    """
+    satellites = []
+    for idx, sat in enumerate(df.iter_rows(named=True)):
+        satellites.append(Satellite(
+            id=idx,
+            satcat_id=sat['satcat_id'],
+            name=sat['object_name'],
+            tle_line1=sat['tle_line1'],
+            tle_line2=sat['tle_line2']
+        ))
+
+    return satellites
+
+
 def station_selector():
     st.markdown('## Ground Station Selection')
 
@@ -122,7 +180,7 @@ def station_selector():
     st.session_state['ka_enabled'] = freq_columns[4].checkbox('Ka', value=False)
 
     station_buttons = []
-    for provider in get_providers():
+    for provider in sorted(get_providers()):
         station_buttons.extend(add_provider_selector(provider))
 
     if st.button('Add Stations'):
@@ -509,6 +567,127 @@ def satellite_selector():
             f"**Number of Selected Satellites:** {st.session_state['satellites_df'].height}")
 
 
+def provider_cost_selector(provider: str):
+    st.session_state.provider_costs[provider] = {}
+
+    st.markdown(f'**{provider.capitalize()}**')
+
+    default_cost_cols = st.columns(4)
+    st.session_state['default_first_time_use_cost'] = default_cost_cols[0].number_input('Default First Time Use Cost ($)', min_value=0.0, value=50000.0, format='%.2f', key=f'{provider}_first_time_use_cost')
+    st.session_state['default_per_satellite_license_cost'] = default_cost_cols[1].number_input('Default Per Satellite License Cost ($)', min_value=0.0, value=5000.0, format='%.2f', key=f'{provider}_per_satellite_license_cost')
+    st.session_state['default_cost_per_pass'] = default_cost_cols[2].number_input('Default Cost per Pass ($)', min_value=0.0, value=0.0, format='%.2f', key=f'{provider}_cost_per_pass')
+    st.session_state['default_cost_per_minute'] = default_cost_cols[3].number_input('Default Cost per Minute ($)', min_value=0.0, value=0.0, format='%.2f', key=f'{provider}_cost_per_minute')
+
+    st.session_state.provider_costs[provider]['integration_cost'] = st.number_input(
+        f'{provider.capitalize()} Integration Cost ($)', min_value=0.0, value=st.session_state.default_integration_cost, format='%.2f', key=f'{provider}_integration_cost')
+
+    with st.expander(f'{provider.capitalize()} Ground Station Costs'):
+        cols = st.columns(4)
+
+        for station in st.session_state['stations_df'].filter(pl.col('provider') == provider)['name'].to_list():
+            st.session_state.provider_costs[provider][station] = {}
+
+            st.session_state.provider_costs[provider][station]['first_time_use_cost'] = cols[0].number_input(
+                f'{station.capitalize()} First Time Use Cost ($)', min_value=0.0, value=st.session_state.default_first_time_use_cost, format='%.2f', key=f'{provider}_{station}_first_time_use_cost')
+            st.session_state.provider_costs[provider][station]['per_satellite_license_cost'] = cols[1].number_input(
+                f'{station.capitalize()} Per Satellite License Cost ($)', min_value=0.0, value=st.session_state.default_per_satellite_license_cost, format='%.2f', key=f'{provider}_{station}_per_satellite_license_cost')
+            st.session_state.provider_costs[provider][station]['cost_per_pass'] = cols[2].number_input(
+                f'{station.capitalize()} Cost per Pass ($)', min_value=0.0, value=st.session_state.default_cost_per_pass, format='%.2f', key=f'{provider}_{station}_cost_per_pass')
+            st.session_state.provider_costs[provider][station]['cost_per_minute'] = cols[3].number_input(
+                f'{station.capitalize()} Cost per Minute ($)', min_value=0.0, value=st.session_state.default_cost_per_minute, format='%.2f', key=f'{provider}_{station}_cost_per_minute')
+
+def cost_model_selector():
+    """
+    Create widget to allow the user to define the cost model for the ground station optimization problem.
+    """
+
+    st.markdown('### Cost Model')
+    st.markdown("""
+    This section allows the user to define the costs associated with the use of different ground stations and providers.
+    These costs are the primary drivers of the selection of ground stations and providers. There are multiple potential
+    costs associated with the use of a ground station. These include:
+      - **Integration Cost**: The cost for the operator to integrate the ground station into their network. This is typically a one-time cost. It can conver both engineering time to integrate the station into the network, as well as any hardware or software costs.
+      - **First Time Use Cost**: The cost for the first time use of the ground station. This can include costs for setting up the station for use, such as provisioning operator-specific hardware at the station.
+      - **Per Satellite License Cost**: The the one-time cost of any regulatory, licensing, or legal fees associated with using the station for a specific satellite.
+      - **Cost per Pass**: The cost of using the station for a single pass of a satellite. This is charged each time the station is used to communicate with a satellite, it is independent of the duration of the pass.
+      - **Cost per Minute**: The cost of using the station for a single minute of communication with a satellite. This is charged based on the duration of the pass.
+      
+    Note a provider will typically charge either a cost per pass or a cost per minute, but not both.
+    """)
+
+    st.markdown('#### Cost Definition')
+
+    st.session_state['default_integration_cost'] = st.number_input('Default Integration Cost ($)', min_value=0.0, value=100000.0, format='%.2f')
+
+
+    st.session_state['provider_costs'] = {}
+
+    for provider in sorted(st.session_state['stations_df']['provider'].unique().to_list()):
+        provider_cost_selector(provider)
+
+def create_satellite_datarate_selector():
+
+    st.markdown('This section allows the user to define the data rates for the satellites in the optimization problem.')
+
+    datarate_unit = st.selectbox('Data Rate Unit', ['bps', 'kbps', 'Mbps', 'Gbps'], index=3)
+    default_datarate = st.number_input(f'Default Data Rate {datarate_unit}', min_value=0.0, value=1.2, format='%.2f')
+
+    cols = st.columns(5)
+
+    st.session_state['satellite_datarates'] = {}
+
+    for idx, sat in enumerate(st.session_state['satellites_df'].iter_rows(named=True)):
+        st.session_state['satellite_datarates'][sat['satcat_id']] = cols[idx % 5].number_input(
+            f'{sat["object_name"]} Data Rate ({datarate_unit})', min_value=0.0, value=default_datarate, format='%.3f')
+
+def create_groundstation_datarate_selector(provider: str, datarate_unit: str):
+
+    st.markdown('This section allows the user to define the data rates for the ground stations in the optimization problem.')
+
+    st.markdown(f'**{provider.capitalize()}**')
+
+    default_datarate = st.number_input(f'{provider.capitalize()} Default Data Rate ({datarate_unit})', min_value=0.0, value=2.0, format='%.2f', key=f'{provider}_default_datarate')
+
+    st.session_state['groundstation_datarates'][provider] = {}
+
+    with st.expander(f'{provider.capitalize()} Ground Station Data Rates'):
+        cols = st.columns(5)
+
+        for idx, station in enumerate(st.session_state['stations_df'].filter(pl.col('provider') == provider).iter_rows(named=True)):
+            st.session_state['groundstation_datarates'][provider][station['name']] = cols[idx % 5].number_input(
+                f'{station["name"]} Data Rate ({datarate_unit})', min_value=0.0, value=default_datarate, format='%.3f', key=f'{provider}_{station["name"]}_datarate')
+
+
+def downlink_model_selector():
+    """
+    Create widget to allow the user to define the downlink model for the ground station optimization problem.
+
+    This model defines the downlink capabilities of the ground stations and the satellites.
+    """
+
+    st.markdown('### Data Model')
+    st.markdown("""
+    This section allows the user to define the data downlink model for the ground station optimization problem.
+    The downlink model defines the capabilities of the ground stations and the satellites to communicate with each other.
+    This model determines the effective amount of data that can be downlinked from the satellite to the ground station
+    over a given contact. This section allows the user to define the datarate for each ground station and satellite.
+    The datarate for a given contact is the minimum of the datarates of the satellite and the ground station.
+    """)
+
+    st.markdown('#### Satellite Data Rates')
+
+    create_satellite_datarate_selector()
+
+    st.markdown('#### Ground Station Data Rates')
+
+    st.session_state['groundstation_datarates'] = {}
+
+    datarate_unit = st.selectbox('Data Rate Unit', ['bps', 'kbps', 'Mbps', 'Gbps'], index=3, key='groundstation_datarate_unit')
+
+    for provider in sorted(st.session_state['stations_df']['provider'].unique().to_list()):
+        create_groundstation_datarate_selector(provider, datarate_unit)
+
+
 def optimization_window_selector():
     """
     Allows the user to select the optimization window for the ground station optimization problem.
@@ -552,11 +731,11 @@ def optimization_window_selector():
         st.error('Simulation window duration must be less than or equal to the optimization window duration.')
 
     # Create and store an OptimizationWindow object
-    opt_window = models.OptimizationWindow(
-        opt_start=opt_start,
-        opt_end=opt_end,
-        sim_start=sim_start,
-        sim_end=sim_start + datetime.timedelta(days=sim_duration)
+    opt_window = OptimizationWindow(
+        opt_start=datetime.datetime.fromisoformat(opt_start.isoformat()),
+        opt_end=datetime.datetime.fromisoformat(opt_end.isoformat()),
+        sim_start=datetime.datetime.fromisoformat(sim_start.isoformat()),
+        sim_end=datetime.datetime.fromisoformat((sim_start + datetime.timedelta(days=sim_duration)).isoformat())
     )
 
     st.session_state['opt_window'] = opt_window
@@ -575,13 +754,52 @@ def opt_problem_creator_widget():
     opt_type = st.selectbox('Optimization Type', ['MILP'], index=0)
 
     if st.button('Create Optimization Problem'):
-        # Create Optimization problem
+        # Create the MILP optimizer
+        st.session_state['gsopt'] = MilpOptimizer(opt_window=st.session_state['opt_window'])
 
-        st.session_state['gsopt'] = MilpGSOptimizer(
-            opt_window=st.session_state['opt_window'],
-            stations=utils.ground_stations_from_dataframe(st.session_state['stations_df']),
-            satellites=utils.satellites_from_dataframe(st.session_state['satellites_df'])
-        )
+        # Convert the selected satellites to Satellite objects and add to problem
+        satellites = satellites_from_dataframe(st.session_state['satellites_df'])
+
+        for sat in satellites:
+            # Set datarate for satellite from inputs
+            sat.datarate = st.session_state['satellite_datarates'][sat.satcat_id]
+
+            # Add the satellite to the optimizer
+            st.session_state['gsopt'].add_satellite(sat)
+
+        # Convert the selected Ground Stations to networks and stations
+
+        # Add provider stations to the optimizer
+        for provider in st.session_state['stations_df']['provider'].unique().to_list():
+            provider_stations = st.session_state['stations_df'].filter(pl.col('provider') == provider)
+            stations = ground_stations_from_dataframe(provider_stations)
+
+            # Create a network for the provider
+            network = GroundStationNetwork(stations)
+
+            # Set the integration cost for the network
+            network.integration_cost = st.session_state.provider_costs[provider]['integration_cost']
+
+            # Set cost and datarate for each station
+            for station in stations:
+                station.datarate = st.session_state['groundstation_datarates'][provider][station.name]
+                station.first_time_use_cost = st.session_state.provider_costs[provider][station.name]['first_time_use_cost']
+                station.per_satellite_license_cost = st.session_state.provider_costs[provider][station.name]['per_satellite_license_cost']
+                station.cost_per_pass = st.session_state.provider_costs[provider][station.name]['cost_per_pass']
+                station.cost_per_minute = st.session_state.provider_costs[provider][station.name]['cost_per_minute']
+
+            # Add the network to the optimizer
+            st.session_state.gsopt.add_network(network)
+
+        st.markdown(f"""
+        Created optimization problem with:
+        - Optimization Window: {st.session_state.gsopt.opt_window.opt_start} to {st.session_state.gsopt.opt_window.opt_end}
+        - Simulation Window: {st.session_state.gsopt.opt_window.sim_start} to {st.session_state.gsopt.opt_window.sim_end}
+        - {len(st.session_state.gsopt.satellites)} satellites
+        - {len(st.session_state.gsopt.networks)} ground station networks
+        - {len(st.session_state.gsopt.stations)} ground stations
+        """)
+
 
     # Compute contact windows
     elevation_min = st.number_input('Minimum Elevation (deg)', min_value=0.0, max_value=90.0, value=10.0, step=0.1,)
@@ -590,11 +808,11 @@ def opt_problem_creator_widget():
         if 'gsopt' not in st.session_state:
             st.error('Please create the optimization problem before computing contacts.')
         else:
-            st.session_state['gsopt'].set_access_constraints(elevation_min)
+            # st.session_state['gsopt'].set_access_constraints(elevation_min)
             st.session_state.gsopt.compute_contacts()
 
-            st.markdown(f'Number of Contacts: {len(st.session_state.gsopt.contacts)}')
-
+            # st.markdown(f'Number of Contacts: {len(st.session_state.gsopt.contacts)}')
+            st.success(f"Found {len(st.session_state.gsopt.contacts)} contacts. Contact computation took {utils.get_time_string(st.session_state.gsopt.contact_compute_time)}.")
 
     # Define Constraints and Objective
 

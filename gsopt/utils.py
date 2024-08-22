@@ -80,49 +80,6 @@ def initialize_eop():
         else:
             bh.EOP._initialize()
 
-def contact_list_to_dataframe(contacts: list[bdm.Contact]):
-    # Create a list of  dictionaries to hold the contact data
-    contact_dicts = []
-
-    # Iterate over the contacts and extract the relevant data
-    for contact in contacts:
-        contact_dicts.append({
-            "contact_id": contact.id,
-            "location_id": contact.station_id,
-            "location_name": contact.name,
-            "satcat_id": contact.spacecraft_id,
-            'longitude': contact.center[0],
-            'latitude': contact.center[1],
-            'altitude': contact.center[2] if len(contact.center) > 2 else 0.0,
-            "t_start": contact.t_start,
-            "t_end": contact.t_end,
-            "t_duration": contact.t_duration,
-            "elevation_max": contact.access_properties.elevation_max,
-            "elevation_min": contact.access_properties.elevation_max,
-            "azimuth_open": contact.access_properties.azimuth_open,
-            "azimuth_close": contact.access_properties.azimuth_close,
-        })
-
-    # Convert the list of dictionaries to a Polars DataFrame
-    return contact_dicts
-
-
-def ground_stations_from_dataframe(df: pl.DataFrame) -> list[GroundStation]:
-    """
-    Create a list of GroundStation objects from a Polars DataFrame
-    """
-    stations = []
-    for sta in df.iter_rows(named=True):
-        stations.append(GroundStation(
-            name=sta['name'],
-            provider=sta['provider'],
-            longitude=sta['longitude'],
-            latitude=sta['latitude'],
-            altitude=sta['altitude']
-        ))
-
-    return stations
-
 
 def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]:
     """
@@ -151,40 +108,3 @@ def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]
         ))
 
     return stations
-
-
-
-def satellites_from_dataframe(df: pl.DataFrame) -> list[Satellite]:
-    """
-    Create a list of Satellite objects from a Polars DataFrame
-    """
-    satellites = []
-    for sat in df.iter_rows(named=True):
-        satellites.append(Satellite(
-            satcat_id=sat['satcat_id'],
-            name=sat['object_name'],
-            tle_line1=sat['tle_line1'],
-            tle_line2=sat['tle_line2']
-        ))
-
-    return satellites
-
-
-def satellites_from_constellation_str(constellation: str, tles: dict) -> list[Satellite]:
-    """
-    Create a list of Satellite objects from a constellation string
-    """
-
-    satellites = []
-
-    for tle in tles:
-        if constellation in tle['object_name']:
-            satellites.append(Satellite(
-                satcat_id=tle['satcat_id'],
-                name=tle['object_name'],
-                tle_line1=tle['tle_line1'],
-                tle_line2=tle['tle_line2']
-            ))
-
-    return satellites
-

@@ -90,6 +90,10 @@ This section allows the user to define the optimization problem by selecting the
 problem as well as setting other parameters for the optimization.
 """
 
+downlink_model_selector()
+
+cost_model_selector()
+
 opt_problem_creator_widget()
 
 # Show results

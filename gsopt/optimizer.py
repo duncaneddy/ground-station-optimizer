@@ -70,6 +70,17 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         else:
             raise ValueError("Invalid key type")
 
+    @property
+    def stations(self):
+        """
+        Get all stations in all networks.
+        """
+        stations = []
+        for network in self.networks:
+            stations.extend(network.stations)
+
+        return stations
+
     def compute_contacts(self):
         """
         Compute all contacts between the satellites and ground stations.
@@ -79,9 +90,9 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         t_start = Epoch(self.opt_window.sim_start)
         t_end = Epoch(self.opt_window.sim_end)
 
-        t_duration = (t_end - t_start) // 86400
+        t_duration = t_end - t_start
 
-        logger.info(f"Computing contacts for {len(self.satellites)} satellites and {len(self.networks)} networks over {utils.get_time_string(t_duration):d} period...")
+        logger.info(f"Computing contacts for {len(self.satellites)} satellites and {len(self.networks)} networks over {utils.get_time_string(t_duration)} period...")
 
         ts = time.perf_counter()
 
@@ -122,6 +133,14 @@ class GroundStationOptimizer(metaclass=ABCMeta):
     @abstractmethod
     def write_solution(self, output_file: Path):
         pass
+
+    def set_access_constraints(self, elevation_min: float):
+        """
+        Set the minimum elevation angle for a contact to be considered.
+        """
+
+        for network in self.networks:
+            network.set_property('elevation_min', elevation_min)
 
     def __rich_console__(self):
         raise NotImplementedError
