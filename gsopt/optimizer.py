@@ -2,13 +2,18 @@
 This module contains the base GroundStationOptimizer class, which allows for the definition of
 the problem of ground station selection and optimization.
 '''
+import time
+import multiprocessing as mp
+import brahe as bh
 from enum import Enum
 from pathlib import Path
 
+from brahe import Epoch
 from rich import table
 import logging
 from abc import abstractmethod, ABCMeta
 
+from gsopt import utils
 from gsopt.models import GroundStation, GroundStationNetwork, Satellite, OptimizationWindow
 
 logger = logging.getLogger()
@@ -33,7 +38,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.satellites = []
         self.networks = []
 
-        # Workign variables
+        # Working variables
         self.contacts = []
 
         # Common optimization problem variables
@@ -69,10 +74,46 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         """
         Compute all contacts between the satellites and ground stations.
         """
-        pass
 
-        # Settings for elevation thresholds
-        #
+        # Get contact computation window times
+        t_start = Epoch(self.opt_window.sim_start)
+        t_end = Epoch(self.opt_window.sim_end)
+
+        t_duration = (t_end - t_start) // 86400
+
+        logger.info(f"Computing contacts for {len(self.satellites)} satellites and {len(self.networks)} networks over {utils.get_time_string(t_duration):d} period...")
+
+        ts = time.perf_counter()
+
+        # Check that the simulation window is within the EOP
+        utils.initialize_eop() # Ensure EOP is initialized before checking
+        if t_end.mjd() > max(bh.EOP._data.keys()):
+            msg = f"Simulation end time {self.opt_window.sim_end} is after the EOP end time {max(bh.EOP._data.keys())}"
+            logger.error(msg)
+            raise RuntimeError(msg)
+
+        # Generate work
+        tasks = []
+        for network in self.networks:
+            for station in network.stations:
+                for sc in self.satellites:
+                    tasks.append((station, sc, t_start, t_end))
+
+        # Compute contacts
+        mpctx = mp.get_context('fork')
+        with mpctx.Pool(mp.cpu_count()) as pool:
+
+            results = pool.starmap(utils.compute_contacts, tasks)
+
+            for r in results:
+                # convert result back to Contact objects
+
+                self.contacts.extend(r)
+
+        te = time.perf_counter()
+
+        self.contact_compute_time = te - ts
+        logger.info(f"Contacts computed successfully. Found {len(self.contacts)} contacts. Took {utils.get_time_string(self.contact_compute_time)}.")
 
     @abstractmethod
     def solve(self):

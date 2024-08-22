@@ -51,6 +51,9 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
     def write_solution(self):
         pass
 
+    def __str__(self):
+        return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.networks)} networks, {len(self.contacts)} contacts>"
+
 # class MilpGSOptimizer(pk.block):
 #
 #     def __init__(self,

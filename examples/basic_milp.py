@@ -7,6 +7,7 @@ and results display.
 import datetime
 import os
 import random
+import logging
 from pathlib import Path
 from rich.console import Console
 
@@ -14,6 +15,7 @@ import brahe as bh
 
 from gsopt.models import Satellite, GroundStation, GroundStationNetwork, OptimizationWindow
 from gsopt.milp_optimizer import MilpOptimizer
+from gsopt.utils import LOG_FORMAT_VERBOSE, LOG_DATE_FORMAT
 
 # Set seed to ensure consistency
 random.seed(42)
@@ -21,9 +23,11 @@ random.seed(42)
 # Create Rich console for pretty printing
 console = Console()
 
+# Set up logging
+logging.basicConfig(level=logging.INFO, format=LOG_FORMAT_VERBOSE, datefmt=LOG_DATE_FORMAT)
+
 # Load the ground stations
 STATION_DATA_DIR = Path('data/groundstations')
-
 
 networks = [] # List of all different station providers to analyze
 
@@ -37,7 +41,7 @@ for station_file in os.listdir(STATION_DATA_DIR):
 
 # Display Station Network
 for sta_network in networks:
-    console.print(sta_network)
+    # console.print(sta_network)
 
     # Set minimum cost per-pass
     sta_network.set_property('cost_per_pass', random.uniform(20, 40))
@@ -84,3 +88,14 @@ opt_window = OptimizationWindow(
 # Create a MILP optimizer
 
 optimizer = MilpOptimizer(opt_window)
+
+for network in networks:
+    optimizer.add_network(network)
+
+for satellite in satellites:
+    optimizer.add_satellite(satellite)
+
+# Compute contacts
+optimizer.compute_contacts()
+
+print(optimizer)

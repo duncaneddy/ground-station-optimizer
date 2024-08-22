@@ -416,3 +416,37 @@ class Satellite():
 
     def __repr__(self):
         return self.__str__()
+
+
+class Contact():
+
+    def __init__(self, contact: bdm.Contact, station: GroundStation, satellite: Satellite):
+
+        # Set contact properties
+        self.id = str(uuid.uuid4())
+
+        # Set Station Values
+        self.station_id = station.id
+        self.provider = station.provider
+        self.longitude = station.lon
+        self.latitude = station.lat
+        self.altitude = station.alt
+
+        # Set Satellite Values
+        self.satellite_id = satellite.id
+        self.satcat_id = str(satellite.satcat_id)
+        self.satellite_name = satellite.name
+        self.tle = satellite.tle
+
+        # Set window values
+        self.t_start = Epoch(contact.t_start)
+        self.t_end = Epoch(contact.t_end)
+        self.duration = contact.t_duration
+
+        # Set cost values
+
+        self.cost = station.cost_per_pass + self.duration*60*station.cost_per_minute
+        self.cost_per_pass = station.cost_per_pass
+        self.cost_per_minute = station.cost_per_minute
+
+

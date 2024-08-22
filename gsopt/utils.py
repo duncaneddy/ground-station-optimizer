@@ -4,6 +4,7 @@ General utilities and helper functions
 
 import os
 import math
+import pathlib
 import time
 import datetime
 import warnings
@@ -20,7 +21,12 @@ from brahe.access.access import find_location_accesses
 import streamlit as st
 from stqdm import stqdm as stqdm
 
-from gsopt.models import Satellite, GroundStation
+from gsopt.models import Satellite, GroundStation, Contact
+
+# Set up logging
+# change asc time to
+LOG_FORMAT_VERBOSE = '%(asctime)s.%(msecs)03d:%(levelname)8s [%(filename)20s:%(lineno)4d] %(message)s'
+LOG_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 APPLIED_FILTER_WARNINGS = False
 def filter_warnings():
@@ -36,114 +42,46 @@ def filter_warnings():
 def get_last_modified_time(file_path):
     return os.path.getmtime(file_path)
 
-
 def get_last_modified_time_as_datetime(file_path):
     return datetime.datetime.fromtimestamp(get_last_modified_time(file_path))
 
+def compute_contacts(station: GroundStation, satellite: Satellite, t_start: bh.Epoch, t_end: bh.Epoch):
+    # Convert Spacecraft and Station objects to Brahe objects
+    sc = satellite.as_brahe_model()
+    loc = station.as_brahe_model()
 
-def create_station_objects(stations: list[GroundStation], elevation_min=0.0):
-    gs = []
-    for sta in stations:
-        gs.append(bdm.Station(
-            **{
-                "properties": {
-                    "constraints": bdm.AccessConstraints(elevation_min=elevation_min),
-                    "name": sta.name,
-                },
-                "type": "Feature",
-                "geometry": {
-                    "type": "Point",
-                    "coordinates": [sta.longitude, sta.latitude, sta.altitude]
-                },
-            }
-        ))
-
-        # Hack to patch in in provider name to Station object
-        gs[-1].__dict__['provider'] = sta.provider
-
-    return gs
-
-def create_spacecraft(satellites: list[Satellite]):
-    spacecraft = []
-    for sat in satellites:
-        spacecraft.append(bdm.Spacecraft(
-            id=int(sat.satcat_id),
-            name=sat.name,
-            line1=sat.tle_line1,
-            line2=sat.tle_line2
-        ))
-
-    return spacecraft
-
-# def compute_contacts(work):
-#     (sc, loc, t_start, t_end) = work
-#     return find_location_accesses(sc, loc, t_start, t_end)
-
-def compute_contacts(sc: bdm.Spacecraft, loc: bdm.Station, t_start: bh.Epoch, t_end: bh.Epoch):
     contacts = find_location_accesses(sc, loc, t_start, t_end)
 
-    # Hack to patch in provider name to Contact object
-    for c in contacts:
-        c.__dict__['provider'] = loc.provider
+    # Create contact object from Brahe Contact objects and return
+    return [Contact(c, station, satellite) for c in contacts]
 
-    return contacts
+def get_time_string(t: float) -> str:
+    """
+    Convert a time in seconds to a human-readable string
+    """
 
-def compute_all_contacts(satellites, stations, t_start, t_end, elevation_min, show_streamlit:bool=False):
-
-    if show_streamlit:
-        status = st.empty()
-
-    ts = time.time()
-
-    if show_streamlit:
-        status.markdown("Preparing data....")
-
-    # Convert statellites to spacecraft
-    spacecraft = create_spacecraft(satellites)
-
-    # Convert locations to stations
-    stations = create_station_objects(stations, elevation_min)
-
-    # Generate work
-    tasks = []
-    for station in stations:
-        for sc in spacecraft:
-            tasks.append((sc, station, t_start, t_end))
-
-    status.write("Computing contacts...")
-
-    contacts = []
-
-    # Create a multiprocessing pool to compute contacts
-    mpctx = mp.get_context('spawn')
-    with mpctx.Pool(mp.cpu_count()) as pool:
-
-        if show_streamlit:
-            results = pool.starmap(compute_contacts, tasks)
-        else:
-            results = pool.starmap(compute_contacts, tasks)
-
-        for r in results:
-            contacts.extend(r)
-
-    te = time.time()
-
-    dt = te - ts
-    if dt > 60:
-        time_string = f"{math.floor(dt/60)} minutes and {dt%60:.2f} seconds"
-    elif dt > 3600:
-        time_string = f"{math.floor(dt/3600)} hours, {math.floor(dt/60)%60} minutes, and {dt%60:.2f} seconds"
+    if t < 60:
+        return f"{t:.2f} seconds"
+    elif t < 3600:
+        return f"{math.floor(t / 60)} minutes and {t % 60:.2f} seconds"
     else:
-        time_string = f"{dt:.2f} seconds"
+        return f"{math.floor(t / 3600)} hours, {math.floor(t / 60) % 60} minutes, and {t % 60:.2f} seconds"
 
-    if show_streamlit:
-        status.success(f"Contacts computed successfully. Found {len(contacts)} contacts. Took {time_string}.")
+def initialize_eop():
+    """
+    Helper function to initialize the Earth Orientation Parameters (EOP) data for Brahe.
+    Some functions in this application require the EOP data to be loaded, namely checking
+    Returns:
 
-    return contacts
-
+    """
+    if not bh.EOP._initialized:
+        if pathlib.Path("data/iau2000A_finals_ab.txt").exists():
+            bh.EOP.load("data/iau2000A_finals_ab.txt")
+        else:
+            bh.EOP._initialize()
 
 def contact_list_to_dataframe(contacts: list[bdm.Contact]):
-    # Create a list of dictionaries to hold the contact data
+    # Create a list of  dictionaries to hold the contact data
     contact_dicts = []
 
     # Iterate over the contacts and extract the relevant data

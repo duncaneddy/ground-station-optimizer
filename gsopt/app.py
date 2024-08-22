@@ -1,6 +1,18 @@
-import shutil
 
-import streamlit as st
+import os
+
+# Optionally instrument the application with Iudex for monitoring
+# See https://iudexai.com/ for more information
+if os.getenv('IUDEX_API_KEY'):
+    from iudex import instrument
+
+    instrument(
+        service_name = "GroundStationOptimizer",  # highly encouraged
+        env = os.getenv('GSOPT_ENV', 'local'),  # dev, local, etc
+        iudex_api_key = os.getenv('IUDEX_API_KEY'),  # only ever commit your WRITE ONLY key
+    )
+
+import shutil
 
 from gsopt.utils import filter_warnings
 from gsopt.widgets import *
@@ -37,10 +49,7 @@ data by clicking the button below.
 
 # Initialize the EOP data since it normally isn't loaded until the first time it is used
 # Check if an EOP file already exists and load it
-if pathlib.Path("data/iau2000A_finals_ab.txt").exists():
-    bh.EOP.load("data/iau2000A_finals_ab.txt")
-else:
-    bh.EOP._initialize()
+utils.initialize_eop()
 
 
 # The bh.EOP data object is the global EOP data object that is used globally in Brahe once loaded. We access the

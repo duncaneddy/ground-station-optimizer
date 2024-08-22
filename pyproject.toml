@@ -21,14 +21,11 @@ dependencies = [
     "httpx>=0.27.0,<1.0.0",
     "pyomo>=6.7.3,<7.0.0",
     "gurobipy>=11.0.3,<12.0.0",
-    "typer>=0.12.3,<1.0.0",
+    "iudex>=0.12.0,<1.0.0",
 ]
 
 [project.urls]
 Homepage = "https://github.com/sisl/ground-station-optimizer"
-
-[project.scripts]
-gsopt = "gsopt.cli.cli:main"
 
 [tool.setuptools]
 packages = ["gsopt"]
