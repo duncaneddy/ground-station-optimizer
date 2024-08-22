@@ -572,9 +572,13 @@ def provider_cost_selector(provider: str):
 
     st.markdown(f'**{provider.capitalize()}**')
 
-    default_cost_cols = st.columns(4)
-    st.session_state['default_first_time_use_cost'] = default_cost_cols[0].number_input('Default First Time Use Cost ($)', min_value=0.0, value=50000.0, format='%.2f', key=f'{provider}_first_time_use_cost')
+    default_cost_cols = st.columns(5)
+    st.session_state['default_setup_cost'] = default_cost_cols[0].number_input('Default First Time Use Cost ($)', min_value=0.0, value=50000.0, format='%.2f', key=f'{provider}_setup_cost')
     st.session_state['default_per_satellite_license_cost'] = default_cost_cols[1].number_input('Default Per Satellite License Cost ($)', min_value=0.0, value=5000.0, format='%.2f', key=f'{provider}_per_satellite_license_cost')
+    st.session_state['default_monthly_cost'] = default_cost_cols[2].number_input('Default Monthly ($)',
+                                                                                  min_value=0.0, value=0.0,
+                                                                                  format='%.2f',
+                                                                                  key=f'{provider}_monthly_cost')
     st.session_state['default_cost_per_pass'] = default_cost_cols[2].number_input('Default Cost per Pass ($)', min_value=0.0, value=0.0, format='%.2f', key=f'{provider}_cost_per_pass')
     st.session_state['default_cost_per_minute'] = default_cost_cols[3].number_input('Default Cost per Minute ($)', min_value=0.0, value=0.0, format='%.2f', key=f'{provider}_cost_per_minute')
 
@@ -582,18 +586,22 @@ def provider_cost_selector(provider: str):
         f'{provider.capitalize()} Integration Cost ($)', min_value=0.0, value=st.session_state.default_integration_cost, format='%.2f', key=f'{provider}_integration_cost')
 
     with st.expander(f'{provider.capitalize()} Ground Station Costs'):
-        cols = st.columns(4)
+        cols = st.columns(5)
 
         for station in st.session_state['stations_df'].filter(pl.col('provider') == provider)['name'].to_list():
             st.session_state.provider_costs[provider][station] = {}
 
-            st.session_state.provider_costs[provider][station]['first_time_use_cost'] = cols[0].number_input(
-                f'{station.capitalize()} First Time Use Cost ($)', min_value=0.0, value=st.session_state.default_first_time_use_cost, format='%.2f', key=f'{provider}_{station}_first_time_use_cost')
+            st.session_state.provider_costs[provider][station]['setup_cost'] = cols[0].number_input(
+                f'{station.capitalize()} Setup Cost ($)', min_value=0.0, value=st.session_state.default_setup_cost, format='%.2f', key=f'{provider}_{station}_setup_cost')
             st.session_state.provider_costs[provider][station]['per_satellite_license_cost'] = cols[1].number_input(
                 f'{station.capitalize()} Per Satellite License Cost ($)', min_value=0.0, value=st.session_state.default_per_satellite_license_cost, format='%.2f', key=f'{provider}_{station}_per_satellite_license_cost')
-            st.session_state.provider_costs[provider][station]['cost_per_pass'] = cols[2].number_input(
+            st.session_state.provider_costs[provider][station]['monthly_cost'] = cols[1].number_input(
+                f'{station.capitalize()} Per Satellite License Cost ($)', min_value=0.0,
+                value=st.session_state.default_monthly_cost, format='%.2f',
+                key=f'{provider}_{station}_montly_cost')
+            st.session_state.provider_costs[provider][station]['cost_per_pass'] = cols[3].number_input(
                 f'{station.capitalize()} Cost per Pass ($)', min_value=0.0, value=st.session_state.default_cost_per_pass, format='%.2f', key=f'{provider}_{station}_cost_per_pass')
-            st.session_state.provider_costs[provider][station]['cost_per_minute'] = cols[3].number_input(
+            st.session_state.provider_costs[provider][station]['cost_per_minute'] = cols[4].number_input(
                 f'{station.capitalize()} Cost per Minute ($)', min_value=0.0, value=st.session_state.default_cost_per_minute, format='%.2f', key=f'{provider}_{station}_cost_per_minute')
 
 def cost_model_selector():
@@ -607,8 +615,9 @@ def cost_model_selector():
     These costs are the primary drivers of the selection of ground stations and providers. There are multiple potential
     costs associated with the use of a ground station. These include:
       - **Integration Cost**: The cost for the operator to integrate the ground station into their network. This is typically a one-time cost. It can conver both engineering time to integrate the station into the network, as well as any hardware or software costs.
-      - **First Time Use Cost**: The cost for the first time use of the ground station. This can include costs for setting up the station for use, such as provisioning operator-specific hardware at the station.
+      - **Setup Cost**: The cost to setup a ground station for first use. This can include costs for setting up the station for use, such as provisioning operator-specific hardware at the station.
       - **Per Satellite License Cost**: The the one-time cost of any regulatory, licensing, or legal fees associated with using the station for a specific satellite.
+      - **Monthly Cost**: The monthly fix cost of using the station. This cost is charged regardless of the number of passes or the duration of the passes. It is typically driven by monthly backhaul (internet) costs, power costs, or other fixed costs.
       - **Cost per Pass**: The cost of using the station for a single pass of a satellite. This is charged each time the station is used to communicate with a satellite, it is independent of the duration of the pass.
       - **Cost per Minute**: The cost of using the station for a single minute of communication with a satellite. This is charged based on the duration of the pass.
       
@@ -783,8 +792,9 @@ def opt_problem_creator_widget():
             # Set cost and datarate for each station
             for station in stations:
                 station.datarate = st.session_state['groundstation_datarates'][provider][station.name]
-                station.first_time_use_cost = st.session_state.provider_costs[provider][station.name]['first_time_use_cost']
+                station.setup_cost = st.session_state.provider_costs[provider][station.name]['setup_cost']
                 station.per_satellite_license_cost = st.session_state.provider_costs[provider][station.name]['per_satellite_license_cost']
+                station.cost_per_pass = st.session_state.provider_costs[provider][station.name]['monthly_cost']
                 station.cost_per_pass = st.session_state.provider_costs[provider][station.name]['cost_per_pass']
                 station.cost_per_minute = st.session_state.provider_costs[provider][station.name]['cost_per_minute']
 

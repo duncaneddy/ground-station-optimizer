@@ -62,7 +62,14 @@ class GroundStation():
                  id: str | None = None,
                  provider: str | None = None,
                  elevation_min: float = 0.0,
-                 datarate: float = 0.0):
+                 datarate: float = 0.0,
+                 setup_cost: float = 0.0,
+                 per_satellite_license_cost: float = 0.0,
+                 monthly_cost: float = 0.0,
+                 cost_per_pass: float = 0.0,
+                 cost_per_minute: float = 0.0,
+                 antennas: int = 1,
+                 ):
 
         if not name:
             raise ValueError("Ground station must have a name")
@@ -89,13 +96,17 @@ class GroundStation():
         self.elevation_min = elevation_min
 
         # Set cost objects
-        self.cost_per_pass = 0.0
-        self.cost_per_minute = 0.0
-        self.per_satellite_license_cost = 0.0
-        self.first_time_use_cost = 0.0
+        self.setup_cost = setup_cost
+        self.per_satellite_license_cost = per_satellite_license_cost
+        self.monthly_cost = monthly_cost
+        self.cost_per_pass = cost_per_pass
+        self.cost_per_minute = cost_per_minute
 
         # Set data rate
         self.datarate = datarate
+
+        # Set antenna count
+        self.antennas = antennas
 
     @classmethod
     def from_geojson(cls, data: dict):
@@ -122,7 +133,13 @@ class GroundStation():
             latitude=geometry['coordinates'][1],
             altitude=geometry['coordinates'][2] if len(geometry['coordinates']) > 2 else 0.0,
             elevation_min=properties['elevation_min'] if 'elevation_min' in properties else 0.0,
-            datarate=properties['datarate'] if 'datarate' in properties else 0.0
+            datarate=properties['datarate'] if 'datarate' in properties else 0.0,
+            setup_cost=properties['setup_cost'] if 'setup_cost' in properties else 0.0,
+            per_satellite_license_cost=properties['per_satellite_license_cost'] if 'per_satellite_license_cost' in properties else 0.0,
+            monthly_cost=properties['monthly_cost'] if 'monthly_cost' in properties else 0.0,
+            cost_per_pass=properties['cost_per_pass'] if 'cost_per_pass' in properties else 0.0,
+            cost_per_minute=properties['cost_per_minute'] if 'cost_per_minute' in properties else 0.0,
+            antennas=properties['antennas'] if 'antennas' in properties else 1
         )
 
     @property
@@ -163,7 +180,13 @@ class GroundStation():
                 "name": self.name,
                 "provider": self.provider,
                 "elevation_min": self.elevation_min,
-                "datarate": self.datarate
+                "datarate": self.datarate,
+                "setup_cost": self.setup_cost,
+                "per_satellite_license_cost": self.per_satellite_license_cost,
+                "monthly_cost": self.monthly_cost,
+                "cost_per_pass": self.cost_per_pass,
+                "cost_per_minute": self.cost_per_minute,
+                "antennas": self.antennas
             }
         }
 
@@ -179,10 +202,11 @@ class GroundStation():
         tbl.add_row("Latitude [deg]", f"{self.lat:.3f}")
         tbl.add_row("Altitude [m]", f"{self.alt:.3f}")
         tbl.add_row("Elevation Min [deg]", f"{self.elevation_min:.3f}")
+        tbl.add_row("Setup Cost", f"${self.setup_cost:.2f}")
+        tbl.add_row("Per Satellite License Cost", f"${self.per_satellite_license_cost:.2f}")
+        tbl.add_row("Monthly Cost", f"${self.monthly_cost:.2f}")
         tbl.add_row("Cost per Pass", f"${self.cost_per_pass:.2f}")
         tbl.add_row("Cost per Minute", f"${self.cost_per_minute:.2f}")
-        tbl.add_row("Per Satellite License Cost", f"${self.per_satellite_license_cost:.2f}")
-        tbl.add_row("First Time Use Cost", f"${self.first_time_use_cost:.2f}")
         tbl.add_row("Data Rate [Mbps]", f"{self.datarate * 1e-6:.3f}")
 
 
@@ -282,7 +306,7 @@ class GroundStationNetwork():
             - key (str): ID of specific station to update
         """
 
-        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'first_time_use_cost', 'elevation_min', 'datarate']:
+        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'setup_cost', 'elevation_min', 'datarate']:
             raise ValueError(f"\"{property}\" is not a settable property")
 
         if value < 0.0:
