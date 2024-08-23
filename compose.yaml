@@ -7,4 +7,4 @@ services:
       - ./data:/data
     environment:
       IUDEX_API_KEY: ${IUDEX_API_KEY}
-      IUDEX_API_URL: ${GSOPT_ENV}
+      IUDEX_API_URL: ${GSOPT_ENV}g

@@ -25,6 +25,7 @@ console = Console()
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT_VERBOSE, datefmt=LOG_DATE_FORMAT)
+logger = logging.getLogger(__name__)
 
 # Load the ground stations
 STATION_DATA_DIR = Path('data/groundstations')
@@ -98,4 +99,4 @@ for satellite in satellites:
 # Compute contacts
 optimizer.compute_contacts()
 
-print(optimizer)
+logger(optimizer)

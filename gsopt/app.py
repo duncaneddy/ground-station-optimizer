@@ -4,13 +4,17 @@ import os
 # Optionally instrument the application with Iudex for monitoring
 # See https://iudexai.com/ for more information
 if os.getenv('IUDEX_API_KEY'):
-    from iudex import instrument
+    pass
+    from iudex import instrument, start_trace, end_trace
 
     instrument(
         service_name = "GroundStationOptimizer",  # highly encouraged
         env = os.getenv('GSOPT_ENV', 'local'),  # dev, local, etc
         iudex_api_key = os.getenv('IUDEX_API_KEY'),  # only ever commit your WRITE ONLY key
+        disable_print=True,
     )
+
+    iudex_token = start_trace(name="GSOpt")
 
 import shutil
 
@@ -96,4 +100,7 @@ cost_model_selector()
 
 opt_problem_creator_widget()
 
-# Show results
+# Clean Up Iudex Logging
+if os.getenv('IUDEX_API_KEY'):
+    pass
+    end_trace(iudex_token)
