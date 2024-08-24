@@ -1,6 +1,185 @@
 {
   "type": "FeatureCollection",
   "features": [
-
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+            -149.900278,
+            71.290558
+        ]
+      },
+      "properties": {
+        "name": "Alaska",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.702049,
+          45.841171
+        ]
+      },
+      "properties": {
+        "name": "Oregon",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -83.114075,
+          40.099228
+        ]
+      },
+      "properties": {
+        "name": "Ohio",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -157.858337,
+          21.306944
+        ]
+      },
+      "properties": {
+        "name": "Hawaii",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.860777,
+          -52.933880
+        ]
+      },
+      "properties": {
+        "name": "Punta Arenas",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -6.253288,
+          53.332549
+        ]
+      },
+      "properties": {
+        "name": "Ireland",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.059404,
+          59.333672,
+        ]
+      },
+      "properties": {
+        "name": "Stockholm",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          50.583054,
+          26.249921
+        ]
+      },
+      "properties": {
+        "name": "Bahrain",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.425318,
+          -33.932130
+        ]
+      },
+      "properties": {
+        "name": "Cape Town",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.041605,
+          37.502510
+        ]
+      },
+      "properties": {
+        "name": "Seoul",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          103.848992,
+          1.282253
+        ]
+      },
+      "properties": {
+        "name": "Singapore",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          148.615575,
+          -32.176722
+        ]
+      },
+      "properties": {
+        "name": "Dubbo",
+        "provider": "Aws",
+        "frequency_bands": ["S", "X"]
+      }
+    }
   ]
 }
