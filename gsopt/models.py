@@ -211,8 +211,7 @@ class GroundStation():
         tbl.add_row("Cost per Pass", f"${self.cost_per_pass:.2f}")
         tbl.add_row("Cost per Minute", f"${self.cost_per_minute:.2f}")
         tbl.add_row("Data Rate [Mbps]", f"{self.datarate * 1e-6:.3f}")
-        tbl.add_row("Antennas", self.antennas)
-
+        tbl.add_row("Antennas", f"{self.antennas:d}")
 
         yield tbl
 
@@ -232,6 +231,10 @@ class GroundStationProvider():
         else:
             self.stations = stations
 
+        # Ensure all stations have the same provider ID
+        for sta in self.stations:
+            sta.provider_id = self.provider_id
+
         if len(self.stations) > 0:
             self.provider = self.stations[0].provider
 
@@ -248,7 +251,7 @@ class GroundStationProvider():
         self.integration_cost = integration_cost
 
     @classmethod
-    def load_geojson(cls, f):
+    def load_geojson(cls, f, integration_cost: float = 0.0):
         """
         Load a GroundStationProvider from a GeoJSON file
 
@@ -265,12 +268,12 @@ class GroundStationProvider():
 
             stations = [GroundStation.from_geojson(obj) for obj in data["features"]]
 
-            return cls(stations)
+            return cls(stations, integration_cost=integration_cost)
 
         elif data["type"] == "Feature":
             station = GroundStation.from_geojson(data)
 
-            return cls([station])
+            return cls([station], integration_cost=integration_cost)
 
         else:
             raise RuntimeError(f"Found unsupported GeoJSON type \"{data['type']}\"")
@@ -310,7 +313,7 @@ class GroundStationProvider():
             - key (str): ID of specific station to update
         """
 
-        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'monthly_cost', 'setup_cost', 'elevation_min', 'datarate']:
+        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'monthly_cost', 'setup_cost', 'elevation_min', 'datarate', 'antennas']:
             raise ValueError(f"\"{property}\" is not a settable property")
 
         if value < 0.0:
@@ -350,14 +353,17 @@ class GroundStationProvider():
         return len(self.stations)
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        tbl = Table(title=f"{self.provider.capitalize()} Ground Stations")
+        tbl = Table(title=f"Provider Information")
 
-        tbl.add_column("Name", justify="left")
-        tbl.add_column("Id", justify="left")
-        tbl.add_column("Number of Stations", justify="left")
-        tbl.add_column("Integration Cost", justify="left")
+        tbl.add_column("Property", justify="left")
+        tbl.add_column("Value", justify="left")
 
-        tbl.add_row(self.provider, self.provider_id, str(len(self.stations)), f"${self.integration_cost:.2f}")
+        tbl.add_row("Name", self.provider)
+        tbl.add_row("Id", self.provider_id)
+        tbl.add_row("Number of Stations", str(len(self.stations)))
+        tbl.add_row("Integration Cost", f"${self.integration_cost:.2f}")
+
+        yield tbl
 
 class Satellite():
     def __init__(self, satcat_id: str | int, name: str, tle_line1: str, tle_line2: str, id: str = None, datarate: float = 0.0):

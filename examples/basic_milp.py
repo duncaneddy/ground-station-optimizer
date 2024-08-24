@@ -43,6 +43,9 @@ for provider_file in os.listdir(STATION_DATA_DIR):
 # Display Station provider
 for sta_provider in providers:
 
+    # Set minimum elevation angle
+    sta_provider.set_property('elevation_min', 10.0)
+
     sta_provider.integration_cost = random.uniform(50000, 200000)
 
     # Set station one-time costs
@@ -51,11 +54,28 @@ for sta_provider in providers:
 
     # Set minimum cost per-pass
     sta_provider.set_property('monthly_cost', random.uniform(500, 2000))
-    sta_provider.set_property('cost_per_pass', random.uniform(20, 40))
-    sta_provider.set_property('per_satellite_license_cost', random.uniform(2000, 6000))
+
+    # Set base station pass costs
+    sta_cost_per_pass = random.uniform(10, 30)
+    sta_cost_per_minute = random.uniform(2, 15)
+
+    # Randomize cost type (per pass or per minute) consistently across the provider
+    cost_type = random.uniform(0, 1)
 
     # Station max data rate
     sta_provider.set_property('datarate', 2.0e9)  # 2.0 Gbps
+
+    # For each station, Randomize number of antennas
+    for sta in sta_provider.stations:
+        sta_provider.set_property('antennas', random.randint(1, 3), key=sta.id)
+
+        # Set slightly different costs for each station
+        if cost_type >= 0.5:
+            sta_provider.set_property('cost_per_pass', sta_cost_per_pass + random.uniform(0, 20), key=sta.id)
+            sta_provider.set_property('cost_per_minute', 0.0, key=sta.id)
+        else:
+            sta_provider.set_property('cost_per_pass', 0.0, key=sta.id)
+            sta_provider.set_property('cost_per_minute', sta_cost_per_minute + random.uniform(0, 10), key=sta.id)
 
 # Create a few satellites to optimize for
 
@@ -101,11 +121,14 @@ opt_window = OptimizationWindow(
 optimizer = MilpOptimizer(opt_window)
 
 for provider in providers:
-    # console.print(provider)
+    console.print(provider)
+
+    for station in provider.stations:
+        console.print(station)
     optimizer.add_provider(provider)
 
 for satellite in satellites:
-    # console.print(satellite)
+    console.print(satellite)
     optimizer.add_satellite(satellite)
 
 # Compute contacts
