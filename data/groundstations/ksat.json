@@ -1,6 +1,425 @@
 {
   "type": "FeatureCollection",
   "features": [
-
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -133.549492,
+          68.319386
+        ]
+      },
+      "properties": {
+        "name": "Inuvik",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -147.848110,
+          64.859421
+        ]
+      },
+      "properties": {
+        "name": "Fairbanks",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.896655,
+          34.081595
+        ]
+      },
+      "properties": {
+        "name": "Los Angeles",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -155.670807,
+          20.000596
+        ]
+      },
+      "properties": {
+        "name": "Hawaii",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+         -80.782411,
+          8.531899
+        ]
+      },
+      "properties": {
+        "name": "Panama",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -64.186646,
+          -31.418050
+        ]
+      },
+      "properties": {
+        "name": "Cordoba",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -67.200814,
+          -54.511249
+        ]
+      },
+      "properties": {
+        "name": "Tolhuin",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -70.860777,
+          -52.933880
+        ]
+      },
+      "properties": {
+        "name": "Punta Arenas",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -51.685266,
+          64.189905
+        ]
+      },
+      "properties": {
+        "name": "Nuuk",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          15.399419,
+          78.230292
+        ]
+      },
+      "properties": {
+        "name": "Svalbard",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          18.940729,
+          69.662517
+        ]
+      },
+      "properties": {
+        "name": "Tromso",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.095597,
+          70.371818
+        ]
+      },
+      "properties": {
+        "name": "Vardo",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -25.496738,
+          37.770186
+        ]
+      },
+      "properties": {
+        "name": "Azores",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.107064,
+          38.687158
+        ]
+      },
+      "properties": {
+        "name": "Puertollano",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -15.586011,
+          27.759978
+        ]
+      },
+      "properties": {
+        "name": "Maspalomas",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          22.622708,
+          37.846053
+        ]
+      },
+      "properties": {
+        "name": "Nemea",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.685036,
+          -25.889873
+        ]
+      },
+      "properties": {
+        "name": "Hartebeesthoek",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.556766,
+          -72.009526
+        ]
+      },
+      "properties": {
+        "name": "Troll",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          55.465606,
+          25.227504
+        ]
+      },
+      "properties": {
+        "name": "Dubai",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          57.450548,
+          -20.500989
+        ]
+      },
+      "properties": {
+        "name": "Mauritius",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          77.590987,
+          12.975490
+        ]
+      },
+      "properties": {
+        "name": "Bangalore",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          103.806953,
+          1.374314
+        ]
+      },
+      "properties": {
+        "name": "Singapore",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          115.441086,
+          -29.185002
+        ]
+      },
+      "properties": {
+        "name": "Mingenew",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          142.618395,
+          43.282882
+        ]
+      },
+      "properties": {
+        "name": "Hokkaido",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          139.748553,
+          35.685042
+        ]
+      },
+      "properties": {
+        "name": "Tokyo",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.627872,
+          33.444491
+        ]
+      },
+      "properties": {
+        "name": "Jeju",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          127.802449,
+          26.364084
+        ]
+      },
+      "properties": {
+        "name": "Okinawa",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.369442,
+          -46.501771
+        ]
+      },
+      "properties": {
+        "name": "Awarua",
+        "provider": "Ksat",
+        "frequency_bands": ["S", "X"]
+      }
+    }
   ]
 }
