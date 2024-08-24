@@ -13,8 +13,8 @@ from rich.console import Console
 
 import brahe as bh
 
-from gsopt.milp_constraints import ProviderLimitConstraint, MinContactDurationConstraint
-from gsopt.milp_objectives import MaxDataDownlinkObjective
+from gsopt.milp_constraints import *
+from gsopt.milp_objectives import *
 from gsopt.models import Satellite, GroundStation, GroundStationProvider, OptimizationWindow
 from gsopt.milp_optimizer import MilpOptimizer
 from gsopt.utils import LOG_FORMAT_VERBOSE, LOG_DATE_FORMAT
@@ -146,8 +146,17 @@ optimizer.set_objective(
 
 # Add Constraints
 optimizer.add_constraints([
+    ConstellationDataDownlinkConstraint(),
+    SatelliteDataDownlinkConstraint(),
+    OperationalCostConstraint(),
+    StationAntennaLimitConstraint(),
+    SatelliteContactExclusionConstraint(),
+    MaxContactGapConstraint(max_gap=1800.0),
     ProviderLimitConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
+    MaxContactsPerPeriodConstraint(),
+    # RequireProviderConstraint(),
+    # RequireStationConstraint()
 ])
 
 # Solve the optimization problem
