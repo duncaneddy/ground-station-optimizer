@@ -61,6 +61,7 @@ class GroundStation():
                  altitude: float = 0.0,
                  id: str | None = None,
                  provider: str | None = None,
+                 provider_id: str | None = None,
                  elevation_min: float = 0.0,
                  datarate: float = 0.0,
                  setup_cost: float = 0.0,
@@ -90,6 +91,7 @@ class GroundStation():
 
         self.name = name
         self.provider = provider
+        self.provider_id = provider_id
         self.longitude = longitude
         self.latitude = latitude
         self.altitude = altitude
@@ -129,6 +131,7 @@ class GroundStation():
         return cls(
             name=properties['name'],
             provider=properties['provider'],
+            provider_id=properties['provider_id'] if 'provider_id' in properties else None,
             longitude=geometry['coordinates'][0],
             latitude=geometry['coordinates'][1],
             altitude=geometry['coordinates'][2] if len(geometry['coordinates']) > 2 else 0.0,
@@ -198,6 +201,7 @@ class GroundStation():
 
         tbl.add_row("Name", self.name)
         tbl.add_row("Provider", self.provider)
+        tbl.add_row("Provider ID", self.provider_id)
         tbl.add_row("Longitude [deg]", f"{self.lon:.3f}")
         tbl.add_row("Latitude [deg]", f"{self.lat:.3f}")
         tbl.add_row("Altitude [m]", f"{self.alt:.3f}")
@@ -208,6 +212,7 @@ class GroundStation():
         tbl.add_row("Cost per Pass", f"${self.cost_per_pass:.2f}")
         tbl.add_row("Cost per Minute", f"${self.cost_per_minute:.2f}")
         tbl.add_row("Data Rate [Mbps]", f"{self.datarate * 1e-6:.3f}")
+        tbl.add_row("Antennas", self.antennas)
 
 
         yield tbl
@@ -222,6 +227,7 @@ class GroundStationNetwork():
                  integration_cost: float = 0.0):
 
         self.provider = None
+        self.provider_id = str(uuid.uuid4())
 
         if not stations:
             self.stations = []
@@ -462,6 +468,7 @@ class Contact():
 
         # Set Station Values
         self.station_id = station.id
+        self.provider_id = station.provider_id
         self.provider = station.provider
         self.longitude = station.lon
         self.latitude = station.lat

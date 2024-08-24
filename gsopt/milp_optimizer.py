@@ -24,6 +24,8 @@ class OptimizerType(Enum):
     Gurobi = 'gurobi'
     Cbc = 'cbc'
 
+
+# MILP Optimizer
 class MilpOptimizer(pk.block, GroundStationOptimizer):
     """
     A MILP optimizer defines
@@ -45,109 +47,85 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         self.elevation_min = 0.0
 
+        # Variables
+        self.provider_nodes = pk.block_dict()
+        self.station_nodes = pk.block_dict()
+        self.contact_nodes = pk.block_dict()
+        self.satellite_nodes = pk.block_dict()
+
+        # Constraints container
+        self.constraints = pk.constraint_list()
+
+        # Metadata
+        self.n_vars = {
+            'providers': 0,
+            'stations': 0,
+            'contacts': 0,
+            'satellites': 0
+        }
+        self.n_constraints = 0
+
+        self._problem_initialized = False
+
+    def set_objective(self, objective):
+        """
+        Set the objective function for the optimization problem
+
+        Args:
+            objective (pk.objective): Objective function to set
+        """
+
+        if isinstance(objective, pk.objective):
+            # Hack to ensure no previous objective exists
+            if hasattr(self, "obj"):
+                del self.obj
+
+            self.obj = objective
+
+        else:
+            raise ValueError(f"Objective must be of type pk.objective. Unsupported type: {type(objective)}")
+
+    def add_constraint(self, constraint):
+        """
+        Add / apply a constraint set to the model instance
+
+        Args:
+            constraint (pk.constraints): Constraint to add to the model
+        """
+
+        if isinstance(constraint, (pk.constraint, pk.constraint_list, pk.constraint_dict)):
+            self.constraints.append(constraint)
+        else:
+            raise ValueError(f"Constraint must be of type pk.constraint, pk.constraint_list, or pk.constraint_dict")
+
+    def generate_problem(self):
+        """
+        Build the underlying MILP objetive and constraints
+        """
+
+        inputs = dict(
+            provider_nodes=self.provider_nodes,
+            station_nodes=self.station_nodes,
+            contact_nodes=self.contact_nodes,
+            satellite_nodes=self.satellite_nodes
+        )
+
+        # Generate objective
+        self.obj.generate_objective(**inputs)
+
+        # Generate constraints
+        for constraint in self.constraints:
+            constraint.generate_constraints(**inputs)
+            self.n_constraints += len(constraint)
+
     def solve(self):
-        pass
+
+        if not self._problem_initialized:
+            self.generate_problem()
+            self._problem_initialized = True
 
     def write_solution(self):
         pass
 
     def __str__(self):
         return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.networks)} networks, {len(self.contacts)} contacts>"
-
-# class MilpGSOptimizer(pk.block):
-#
-#     def __init__(self,
-#                  opt_window: OptimizationWindow | None,
-#                  stations: list[GroundStation] | None = None,
-#                  satellites: list[Satellite] | None = None,
-#                  optimizer_type: OptimizerType = OptimizerType.Gurobi,
-#                  ):
-#         super().__init__()
-#
-#         # Default initializations
-#         self.solve_time = 0.0
-#         self.contact_compute_time = 0.0
-#         self.opt_window = opt_window
-#         self.stations   = stations
-#         self.satellites = satellites
-#         self.elevation_min = 0.0
-#         self.contacts = None
-#
-#         # Set the optimizer_type
-#         self.optimizer_type = optimizer_type
-#
-#         # MILP Model Initialization
-#         self.constraints = pk.constraint_list()
-#         self.objective = pk.objective()
-#         self.contact_nodes = pk.variable_dict()
-#
-#
-#     def set_optimization_window(self, opt_window):
-#         self.opt_window = opt_window
-#
-#     def set_satellites(self, satellites):
-#         self.satellites = satellites
-#
-#     def set_stations(self, stations):
-#         self.stations = stations
-#
-#     def set_access_constraints(self, elevation_min):
-#         self.elevation_min = elevation_min
-#
-#     def compute_contacts(self):
-#         precompute_time = time.perf_counter()
-#
-#         t_start = bh.Epoch(self.opt_window.sim_start)
-#         t_end   = bh.Epoch(self.opt_window.sim_end)
-#
-#         self.contacts = utils.compute_all_contacts(
-#             self.satellites,
-#             self.stations,
-#             t_start,
-#             t_end,
-#             self.elevation_min,
-#             show_streamlit=True
-#         )
-#
-#         completion_time = time.perf_counter()
-#
-#         self.contact_compute_time = completion_time - precompute_time
-#
-#         # Populate the contact nodes
-#         for contact in self.contacts:
-#             self.contact_nodes[contact.id] = pk.variable(value=0, domain=pk.Binary)
-#
-#     def set_objective_maximize_contact_time(self):
-#
-#         if len(self.contact_nodes) == 0:
-#             raise RuntimeError("No contact nodes found. Please compute contacts first.")
-#
-#         # Set optimization direction to maximize
-#         self.objective.sense = pk.maximize
-#         self.objective.expr  = 0
-#
-#         # Objective: Maximize the total contact time
-#         for c in self.contacts:
-#             self.objective.expr += c.t_duration * self.contact_nodes[c.id]
-#
-#     def solve(self):
-#
-#         # Create the solver
-#         if self.optimizer_type == OptimizerType.Gurobi:
-#             solver = po.SolverFactory("gurobi")
-#         else:
-#             logger.info("Using backup COIN-OR CBC solver")
-#             solver = po.SolverFactory("cbc")
-#
-#         # Solve the problem
-#         presolve_time = time.perf_counter()
-#         self.solution = solver.solve(self)
-#         completion_time = time.perf_counter()
-#
-#         self.solve_time = completion_time - presolve_time
-#
-#         if (self.solution.solver.status != po.SolverStatus.ok
-#              or self.solution.solver.termination_condition != po.TerminationCondition.optimal):
-#             raise RuntimeError(
-#                 f"Station Optimization Error: Solver Status {self.solution.solver.status} | TerminationCondition {self.solution.solver.termination_condition}"
-#             )
