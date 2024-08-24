@@ -180,7 +180,7 @@ class MinContactDurationConstraint(pk.constraint_list, GSOptConstraint):
 
         self.min_duration = min_duration
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
+    def _generate_constraints(self, contact_nodes: dict[str, ContactNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
