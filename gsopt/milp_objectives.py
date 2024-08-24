@@ -13,68 +13,71 @@ class GSOptObjective(metaclass=ABCMeta):
     """
     Abstract class for the objective function of the MILP optimization.
 
-    Enforces the implementation of the generate_objective method.
+    Enforces the implementation of the _generate_objective method.
     """
-    @abstractmethod
+
     def __init__(self):
         pass
 
     @abstractmethod
-    def generate_objective(self):
+    def _generate_objective(self):
         pass
 
 
-class MinCostObjective(pk.block, GSOptObjective):
+class MinCostObjective(pk.objective, GSOptObjective):
     """
     Objective function for the MILP optimization that minimizes the total cost (capital and operational) of the
     ground station provider over the optimization period.
     """
+
     def __init__(self, **kwargs):
-        pk.block.__init__(self, **kwargs)
+        pk.objective.__init__(self)
+        GSOptObjective.__init__(self)
 
-
-    def generate_objective(self, provider_nodes: list[ProviderNode] | None = None,
-                           station_nodes: list[StationNode] | None = None,
-                           contact_nodes: list[ContactNode] | None = None,
-                           opt_window: OptimizationWindow | None = None):
+    def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
+                            station_nodes: dict[str, StationNode] | None = None,
+                            contact_nodes: dict[str, ContactNode] | None = None,
+                            opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the objective function.
         """
         pass
 
 
-class MaxDataDownlink(pk.block, GSOptObjective):
+class MaxDataDownlinkObjective(pk.objective, GSOptObjective):
     """
     Objective function for the MILP optimization that maximizes the total data downlinked by the constellation over the
     optimization period.
     """
+
     def __init__(self, **kwargs):
-        pk.block.__init__(self, **kwargs)
+        pk.objective.__init__(self)
+        GSOptObjective.__init__(self)
 
-
-    def generate_objective(self, provider_nodes: list[ProviderNode] | None = None,
-                           station_nodes: list[StationNode] | None = None,
-                           contact_nodes: list[ContactNode] | None = None,
-                           opt_window: OptimizationWindow | None = None):
+    def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
+                            station_nodes: dict[str, StationNode] | None = None,
+                            contact_nodes: dict[str, ContactNode] | None = None,
+                            opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the objective function.
         """
         pass
 
 
-class MinMaxContactGap(pk.block, GSOptObjective):
+class MinMaxContactGapObjective(pk.objective, GSOptObjective):
     """
     Objective function for the MILP optimization that minimizes the maximum gap between contacts across all satellites
     in the constellation over the optimization period.
     """
+
     def __init__(self, **kwargs):
-        pk.block.__init__(self, **kwargs)
+        pk.objective.__init__(self)
+        GSOptObjective.__init__(self)
 
-
-    def generate_objective(self, provider_nodes: list[ProviderNode] | None = None,
-                           station_nodes: list[StationNode] | None = None,
-                           contact_nodes: list[ContactNode] | None = None,
-                           opt_window: OptimizationWindow | None = None):
+    def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
+                            station_nodes: dict[str, StationNode] | None = None,
+                            contact_nodes: dict[str, ContactNode] | None = None,
+                            opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the objective function.
         """

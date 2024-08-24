@@ -9,7 +9,8 @@ from enum import Enum
 from pathlib import Path
 
 from brahe import Epoch
-from rich import table
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
 import logging
 from abc import abstractmethod, ABCMeta
 
@@ -35,11 +36,12 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.opt_window = opt_window
 
         # Problem inputs
-        self.satellites = []
-        self.providers = []
+        self.satellites = {}
+        self.providers = {}
+        self.stations = {}
 
         # Working variables
-        self.contacts = []
+        self.contacts = {}
 
         # Common optimization problem variables
         self.solver_status = SolverStatus.NOT_SOLVED
@@ -47,39 +49,28 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.contact_compute_time = 0.0
 
     def add_satellite(self, satellite: Satellite):
-        self.satellites.append(satellite)
+        self.satellites[satellite.id] = satellite
 
     def add_provider(self, provider: GroundStationProvider):
         """
         Add a station provider to the optimizer.
         """
-        self.providers.append(provider)
+        self.providers[provider.id] = provider
 
-    def get_provider(self, key: str | int):
-        """
-        Get a provider by name or index.
-        """
-        if isinstance(key, int):
-            return self.providers[key]
-        elif isinstance(key, str):
-            for provider in self.providers:
-                if provider.name == key:
-                    return provider
-
-            raise ValueError(f"provider with name {key} not found")
-        else:
-            raise ValueError("Invalid key type")
+        for station in provider.stations:
+            self.stations[station.id] = station
 
     @property
-    def stations(self):
-        """
-        Get all stations in all providers.
-        """
-        stations = []
-        for provider in self.providers:
-            stations.extend(provider.stations)
+    def provider_ids(self):
+        return set([p.id for p in self.providers])
 
-        return stations
+    @property
+    def station_ids(self):
+        return set([s.id for s in self.stations])
+
+    @property
+    def satellite_ids(self):
+        return set([s.id for s in self.satellites])
 
     def compute_contacts(self):
         """
@@ -105,10 +96,9 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
         # Generate work
         tasks = []
-        for provider in self.providers:
-            for station in provider.stations:
-                for sc in self.satellites:
-                    tasks.append((station, sc, t_start, t_end))
+        for station in self.stations.values():
+            for sc in self.satellites.values():
+                tasks.append((station, sc, t_start, t_end))
 
         # Compute contacts
         mpctx = mp.get_context('fork')
@@ -119,7 +109,8 @@ class GroundStationOptimizer(metaclass=ABCMeta):
             for r in results:
                 # convert result back to Contact objects
 
-                self.contacts.extend(r)
+                for c in r:
+                    self.contacts[c.id] = c
 
         te = time.perf_counter()
 
@@ -142,5 +133,5 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         for provider in self.providers:
             provider.set_property('elevation_min', elevation_min)
 
-    def __rich_console__(self):
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         raise NotImplementedError

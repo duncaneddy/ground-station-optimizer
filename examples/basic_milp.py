@@ -13,6 +13,8 @@ from rich.console import Console
 
 import brahe as bh
 
+from gsopt.milp_constraints import ProviderLimitConstraint, MinContactDurationConstraint
+from gsopt.milp_objectives import MaxDataDownlinkObjective
 from gsopt.models import Satellite, GroundStation, GroundStationProvider, OptimizationWindow
 from gsopt.milp_optimizer import MilpOptimizer
 from gsopt.utils import LOG_FORMAT_VERBOSE, LOG_DATE_FORMAT
@@ -131,7 +133,30 @@ for satellite in satellites:
     console.print(satellite)
     optimizer.add_satellite(satellite)
 
+# Display the optimizer
+logger.info(optimizer)
+
 # Compute contacts
 optimizer.compute_contacts()
 
+# Setup the optimization problem
+
+optimizer.set_objective(
+    # MinCostObjective()
+    MaxDataDownlinkObjective()
+    # MinMaxContactGapObjective()
+)
+
+# Add Constraints
+optimizer.add_constraints([
+    ProviderLimitConstraint(num_providers=3),
+    MinContactDurationConstraint(min_duration=300.0),
+])
+
+# Solve the optimization problem
+optimizer.solve()
+
+# Display the results
 logger.info(optimizer)
+logger.info(optimizer.n_vars)
+logger.info(optimizer.n_constraints)

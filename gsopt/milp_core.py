@@ -14,9 +14,9 @@ class Node(pk.block):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.id = kwargs['id']
+        super().__init__()
         self.obj = kwargs['obj']
+        self.id = self.obj.id
 
     def dict(self):
         d = {
@@ -52,7 +52,26 @@ class ProviderNode(BinaryNode):
     Node class representing a provider. Inherits from the Node class.
 
     Attributes:
-        var (pyomo.kernel.variable): Continuous decision variable
+        var (pyomo.kernel.variable): binary decision variable
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def dict(self):
+        d = super().dict()
+
+        # Add class specific attributes
+
+        return d
+
+
+class StationNode(BinaryNode):
+    """
+    Node class representing a station. Inherits from the Node class.
+
+    Attributes:
+        var (pyomo.kernel.variable): binary decision variable
     """
 
     def __init__(self, **kwargs):
@@ -68,18 +87,19 @@ class ProviderNode(BinaryNode):
         return d
 
 
-class StationNode(BinaryNode):
+class ContactNode(BinaryNode):
     """
-    Node class representing a provider. Inherits from the Node class.
+    Node class representing a contact. Inherits from the Node class.
 
     Attributes:
-        var (pyomo.kernel.variable): Continuous decision variable
+        var (pyomo.kernel.variable): binary decision variable
     """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self.station = kwargs['station']
+        self.provider = kwargs['provider']
 
     def dict(self):
         d = super().dict()
@@ -89,18 +109,16 @@ class StationNode(BinaryNode):
         return d
 
 
-class ContactNode(BinaryNode):
+class SatelliteNode(BinaryNode):
     """
-    Node class representing a provider. Inherits from the Node class.
+    Node class representing a satellite. Inherits from the Node class.
 
     Attributes:
-        var (pyomo.kernel.variable): Continuous decision variable
+        var (pyomo.kernel.variable): binary decision variable
     """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.contact = kwargs['contact']
 
     def dict(self):
         d = super().dict()

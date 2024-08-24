@@ -199,8 +199,9 @@ class GroundStation():
         tbl.add_column("Value")
 
         tbl.add_row("Name", self.name)
+        tbl.add_row("Id", self.id)
         tbl.add_row("Provider", self.provider)
-        tbl.add_row("Provider ID", self.provider_id)
+        tbl.add_row("Provider Id", self.provider_id)
         tbl.add_row("Longitude [deg]", f"{self.lon:.3f}")
         tbl.add_row("Latitude [deg]", f"{self.lat:.3f}")
         tbl.add_row("Altitude [m]", f"{self.alt:.3f}")
@@ -224,7 +225,7 @@ class GroundStationProvider():
                  integration_cost: float = 0.0):
 
         self.provider = None
-        self.provider_id = str(uuid.uuid4())
+        self.id = str(uuid.uuid4())
 
         if not stations:
             self.stations = []
@@ -233,7 +234,7 @@ class GroundStationProvider():
 
         # Ensure all stations have the same provider ID
         for sta in self.stations:
-            sta.provider_id = self.provider_id
+            sta.provider_id = self.id
 
         if len(self.stations) > 0:
             self.provider = self.stations[0].provider
@@ -359,7 +360,7 @@ class GroundStationProvider():
         tbl.add_column("Value", justify="left")
 
         tbl.add_row("Name", self.provider)
-        tbl.add_row("Id", self.provider_id)
+        tbl.add_row("Id", self.id)
         tbl.add_row("Number of Stations", str(len(self.stations)))
         tbl.add_row("Integration Cost", f"${self.integration_cost:.2f}")
 
@@ -457,6 +458,26 @@ class Satellite():
 
     def __repr__(self):
         return self.__str__()
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+
+        tbl = Table(title=f"{self.name.upper()} Satellite")
+
+        tbl.add_column("Property", justify="left")
+        tbl.add_column("Value")
+
+        tbl.add_row("Name", self.name)
+        tbl.add_row("Id", self.id)
+        tbl.add_row("Satcat ID", self.satcat_id)
+        tbl.add_row("Semi-Major Axis [km]", f"{self.tle.a/1e3:.3f}")
+        tbl.add_row("Eccentricity", f"{self.tle.e:.3f}")
+        tbl.add_row("Inclination [deg]", f"{self.tle.i:.3f}")
+        tbl.add_row("RAAN [deg]", f"{self.tle.RAAN:.3f}")
+        tbl.add_row("Argument of Perigee [deg]", f"{self.tle.w:.3f}")
+        tbl.add_row("Mean Anomaly [deg]", f"{self.tle.M:.3f}")
+        tbl.add_row("Data Rate [Mbps]", f"{self.datarate * 1e-6:.3f}")
+
+        yield tbl
 
 
 class Contact():
