@@ -157,10 +157,7 @@ class ProviderLimitConstraint(pk.constraint_list, GSOptConstraint):
 
         self.num_providers = num_providers
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
-                             station_nodes: dict[str, StationNode] | None = None,
-                             contact_nodes: dict[str, ContactNode] | None = None,
-                             opt_window: OptimizationWindow | None = None, **kwargs):
+    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
@@ -183,10 +180,7 @@ class MinContactDurationConstraint(pk.constraint_list, GSOptConstraint):
 
         self.min_duration = min_duration
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
-                             station_nodes: dict[str, StationNode] | None = None,
-                             contact_nodes: dict[str, ContactNode] | None = None,
-                             opt_window: OptimizationWindow | None = None, **kwargs):
+    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
@@ -225,3 +219,47 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
         Generate the constraint_list function.
         """
         pass
+
+
+class RequireProviderConstraint(pk.constraint_list, GSOptConstraint):
+    """
+    Constraint to require a specific provider to be selected.
+    """
+
+    def __init__(self, id: str = None, **kwargs):
+        pk.constraint_list.__init__(self)
+        GSOptConstraint.__init__(self)
+
+        if id is None:
+            raise ValueError("Provider ID must be provided.")
+
+        self.required_id = id
+
+    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
+        """
+        Generate the constraint_list function.
+        """
+
+        self.append(pk.constraint(provider_nodes[self.required_id].var == 1))
+
+
+class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
+    """
+    Constraint to require a specific station to be selected.
+    """
+
+    def __init__(self, id: str = None, **kwargs):
+        pk.constraint_list.__init__(self)
+        GSOptConstraint.__init__(self)
+
+        if id is None:
+            raise ValueError("Station ID must be provided.")
+
+        self.required_id = id
+
+    def _generate_constraints(self, station_nodes: dict[str, StationNode] | None = None, **kwargs):
+        """
+        Generate the constraint_list function.
+        """
+
+        self.append(pk.constraint(station_nodes[self.required_id].var == 1))
