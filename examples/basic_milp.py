@@ -35,12 +35,9 @@ STATION_DATA_DIR = Path('data/groundstations')
 providers = [] # List of all different station providers to analyze
 
 for provider_file in os.listdir(STATION_DATA_DIR):
-    # Hack to skip unpopulated stations
-    if 'ksat' not in provider_file and 'aws' not in provider_file:
-
-        with open(STATION_DATA_DIR / provider_file, 'r') as f:
-            # Load stations from file and add to existing provider
-            providers.append(GroundStationProvider.load_geojson(f))
+    with open(STATION_DATA_DIR / provider_file, 'r') as f:
+        # Load stations from file and add to existing provider
+        providers.append(GroundStationProvider.load_geojson(f))
 
 # Display Station provider
 for sta_provider in providers:

@@ -34,8 +34,7 @@ class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
-                             station_nodes: dict[str, StationNode] | None = None,
+    def _generate_constraints(self, data_min: float = 0.0,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
         """
