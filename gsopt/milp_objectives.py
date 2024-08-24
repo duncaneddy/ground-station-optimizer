@@ -27,7 +27,7 @@ class GSOptObjective(metaclass=ABCMeta):
 class MinCostObjective(pk.block, GSOptObjective):
     """
     Objective function for the MILP optimization that minimizes the total cost (capital and operational) of the
-    ground station network over the optimization period.
+    ground station provider over the optimization period.
     """
     def __init__(self, **kwargs):
         pk.block.__init__(self, **kwargs)

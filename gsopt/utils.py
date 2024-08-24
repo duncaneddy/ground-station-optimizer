@@ -64,8 +64,11 @@ def get_time_string(t: float) -> str:
         return f"{t:.2f} seconds"
     elif t < 3600:
         return f"{math.floor(t / 60)} minutes and {t % 60:.2f} seconds"
-    else:
+    elif t < 86400:
         return f"{math.floor(t / 3600)} hours, {math.floor(t / 60) % 60} minutes, and {t % 60:.2f} seconds"
+    else:
+        return (f"{math.floor(t / 86400)} days, {math.floor(t / 3600) % 24} hours, {math.floor(t / 60) % 60} minutes, "
+                f"and {t % 60:.2f} seconds")
 
 def initialize_eop():
     """

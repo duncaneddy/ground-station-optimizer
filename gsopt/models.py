@@ -54,7 +54,6 @@ class OptimizationWindow():
         """
         return (self.opt_end - self.opt_start).total_seconds()
 
-
 class GroundStation():
 
     def __init__(self, name: str, longitude: float, latitude: float,
@@ -217,10 +216,9 @@ class GroundStation():
 
         yield tbl
 
-
-class GroundStationNetwork():
+class GroundStationProvider():
     """
-    A GroundStationNetwork represents the ground stations of a single ground station provider.
+    A GroundStationProvider represents the ground stations of a single ground station provider.
     """
 
     def __init__(self, stations: list[GroundStation] | None = None,
@@ -240,7 +238,7 @@ class GroundStationNetwork():
             # Check consistency of provider
             for sta in self.stations:
                 if sta.provider != self.provider:
-                    raise RuntimeError(f"Found unexpected provider \"{sta.provider}\". All stations in a network must "
+                    raise RuntimeError(f"Found unexpected provider \"{sta.provider}\". All stations in a provider must "
                                        f"share the same provider.")
 
         # Create Lookups:
@@ -252,7 +250,7 @@ class GroundStationNetwork():
     @classmethod
     def load_geojson(cls, f):
         """
-        Load a GroundStationNetwork from a GeoJSON file
+        Load a GroundStationProvider from a GeoJSON file
 
         Args:
             - f (file): The file to load. Should be a file-pointer to a GeoJSON file.
@@ -299,11 +297,11 @@ class GroundStationNetwork():
         elif key in self._station_name_lookup:
             return self._station_name_lookup[key]
         else:
-            raise ValueError(f"No station with identifier \"{key}\" found in {self.provider} network.")
+            raise ValueError(f"No station with identifier \"{key}\" found in {self.provider} provider.")
 
     def set_property(self, property: str, value: float, key: str | None = None):
         """
-        Set a property for all stations in the network. If a provider is provided then only stations with that
+        Set a property for all stations in the provider. If a provider is provided then only stations with that
         provider will be updated.
 
         Args:
@@ -312,7 +310,7 @@ class GroundStationNetwork():
             - key (str): ID of specific station to update
         """
 
-        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'setup_cost', 'elevation_min', 'datarate']:
+        if property not in ['cost_per_pass', 'cost_per_minute', 'per_satellite_license_cost', 'monthly_cost', 'setup_cost', 'elevation_min', 'datarate']:
             raise ValueError(f"\"{property}\" is not a settable property")
 
         if value < 0.0:
@@ -327,16 +325,16 @@ class GroundStationNetwork():
 
     def __iadd__(self, other: GroundStation):
         """
-        Add new ground station to the network.
+        Add new ground station to the provider.
 
-        :param other: Ground Station to add to the network
+        :param other: Ground Station to add to the provider
         :return:
         """
         return self + other
 
     def __add__(self, other: GroundStation):
         if self.provider is not None and other.provider != self.provider:
-            raise RuntimeError("Cannot add ground station from different provider to network")
+            raise RuntimeError("Cannot add ground station from different provider to provider")
 
         if self.provider is None and other.provider is not None:
             self.provider = other.provider
@@ -355,15 +353,11 @@ class GroundStationNetwork():
         tbl = Table(title=f"{self.provider.capitalize()} Ground Stations")
 
         tbl.add_column("Name", justify="left")
-        tbl.add_column("Lon [deg]")
-        tbl.add_column("Lat [deg]")
-        tbl.add_column("Alt [m]")
+        tbl.add_column("Id", justify="left")
+        tbl.add_column("Number of Stations", justify="left")
+        tbl.add_column("Integration Cost", justify="left")
 
-        for sta in self.stations:
-            tbl.add_row(sta.name, f"{sta.lon:.3f}", f"{sta.lat:.3f}", f"{sta.alt:.3f}")
-
-        yield tbl
-
+        tbl.add_row(self.provider, self.provider_id, str(len(self.stations)), f"${self.integration_cost:.2f}")
 
 class Satellite():
     def __init__(self, satcat_id: str | int, name: str, tle_line1: str, tle_line2: str, id: str = None, datarate: float = 0.0):

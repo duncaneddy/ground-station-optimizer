@@ -14,7 +14,7 @@ import logging
 from abc import abstractmethod, ABCMeta
 
 from gsopt import utils
-from gsopt.models import GroundStation, GroundStationNetwork, Satellite, OptimizationWindow
+from gsopt.models import GroundStation, GroundStationProvider, Satellite, OptimizationWindow
 
 logger = logging.getLogger()
 
@@ -36,7 +36,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
         # Problem inputs
         self.satellites = []
-        self.networks = []
+        self.providers = []
 
         # Working variables
         self.contacts = []
@@ -49,35 +49,35 @@ class GroundStationOptimizer(metaclass=ABCMeta):
     def add_satellite(self, satellite: Satellite):
         self.satellites.append(satellite)
 
-    def add_network(self, network: GroundStationNetwork):
+    def add_provider(self, provider: GroundStationProvider):
         """
-        Add a station network to the optimizer.
+        Add a station provider to the optimizer.
         """
-        self.networks.append(network)
+        self.providers.append(provider)
 
-    def get_network(self, key: str | int):
+    def get_provider(self, key: str | int):
         """
-        Get a network by name or index.
+        Get a provider by name or index.
         """
         if isinstance(key, int):
-            return self.networks[key]
+            return self.providers[key]
         elif isinstance(key, str):
-            for network in self.networks:
-                if network.name == key:
-                    return network
+            for provider in self.providers:
+                if provider.name == key:
+                    return provider
 
-            raise ValueError(f"Network with name {key} not found")
+            raise ValueError(f"provider with name {key} not found")
         else:
             raise ValueError("Invalid key type")
 
     @property
     def stations(self):
         """
-        Get all stations in all networks.
+        Get all stations in all providers.
         """
         stations = []
-        for network in self.networks:
-            stations.extend(network.stations)
+        for provider in self.providers:
+            stations.extend(provider.stations)
 
         return stations
 
@@ -92,7 +92,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
         t_duration = t_end - t_start
 
-        logger.info(f"Computing contacts for {len(self.satellites)} satellites and {len(self.networks)} networks over {utils.get_time_string(t_duration)} period...")
+        logger.info(f"Computing contacts for {len(self.satellites)} satellites and {len(self.providers)} providers, {len(self.stations)} stations, over {utils.get_time_string(t_duration)} period...")
 
         ts = time.perf_counter()
 
@@ -105,8 +105,8 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
         # Generate work
         tasks = []
-        for network in self.networks:
-            for station in network.stations:
+        for provider in self.providers:
+            for station in provider.stations:
                 for sc in self.satellites:
                     tasks.append((station, sc, t_start, t_end))
 
@@ -139,8 +139,8 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         Set the minimum elevation angle for a contact to be considered.
         """
 
-        for network in self.networks:
-            network.set_property('elevation_min', elevation_min)
+        for provider in self.providers:
+            provider.set_property('elevation_min', elevation_min)
 
     def __rich_console__(self):
         raise NotImplementedError

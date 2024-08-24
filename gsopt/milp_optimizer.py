@@ -36,16 +36,8 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         pk.block.__init__(self)
         GroundStationOptimizer.__init__(self, opt_window)
 
-        # Define MILP variables
-        self.contact_nodes = pk.variable_dict()
-
         # Define MILP objective
         self.objective = pk.objective()
-
-        # Define MILP constraints
-        self.constraints = pk.constraint_list()
-
-        self.elevation_min = 0.0
 
         # Variables
         self.provider_nodes = pk.block_dict()
@@ -128,4 +120,4 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         pass
 
     def __str__(self):
-        return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.networks)} networks, {len(self.contacts)} contacts>"
+        return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.providers)} providers, {len(self.stations)} stations, {len(self.contacts)} contacts>"

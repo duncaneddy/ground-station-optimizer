@@ -11,7 +11,7 @@ import streamlit as st
 
 from gsopt import utils
 from gsopt.ephemeris import get_satcat_df
-from gsopt.models import GroundStationNetwork, GroundStation, Satellite, Contact, OptimizationWindow
+from gsopt.models import GroundStationProvider, GroundStation, Satellite, Contact, OptimizationWindow
 import gsopt.plots as plots
 
 from gsopt.milp_optimizer import MilpOptimizer
@@ -614,7 +614,7 @@ def cost_model_selector():
     This section allows the user to define the costs associated with the use of different ground stations and providers.
     These costs are the primary drivers of the selection of ground stations and providers. There are multiple potential
     costs associated with the use of a ground station. These include:
-      - **Integration Cost**: The cost for the operator to integrate the ground station into their network. This is typically a one-time cost. It can conver both engineering time to integrate the station into the network, as well as any hardware or software costs.
+      - **Integration Cost**: The cost for the operator to integrate the ground station into their provider. This is typically a one-time cost. It can conver both engineering time to integrate the station into the provider, as well as any hardware or software costs.
       - **Setup Cost**: The cost to setup a ground station for first use. This can include costs for setting up the station for use, such as provisioning operator-specific hardware at the station.
       - **Per Satellite License Cost**: The the one-time cost of any regulatory, licensing, or legal fees associated with using the station for a specific satellite.
       - **Monthly Cost**: The monthly fix cost of using the station. This cost is charged regardless of the number of passes or the duration of the passes. It is typically driven by monthly backhaul (internet) costs, power costs, or other fixed costs.
@@ -776,18 +776,18 @@ def opt_problem_creator_widget():
             # Add the satellite to the optimizer
             st.session_state['gsopt'].add_satellite(sat)
 
-        # Convert the selected Ground Stations to networks and stations
+        # Convert the selected Ground Stations to providers and stations
 
         # Add provider stations to the optimizer
         for provider in st.session_state['stations_df']['provider'].unique().to_list():
             provider_stations = st.session_state['stations_df'].filter(pl.col('provider') == provider)
             stations = ground_stations_from_dataframe(provider_stations)
 
-            # Create a network for the provider
-            network = GroundStationNetwork(stations)
+            # Create a provider for the provider
+            provider = GroundStationProvider(stations)
 
-            # Set the integration cost for the network
-            network.integration_cost = st.session_state.provider_costs[provider]['integration_cost']
+            # Set the integration cost for the provider
+            provider.integration_cost = st.session_state.provider_costs[provider]['integration_cost']
 
             # Set cost and datarate for each station
             for station in stations:
@@ -798,15 +798,15 @@ def opt_problem_creator_widget():
                 station.cost_per_pass = st.session_state.provider_costs[provider][station.name]['cost_per_pass']
                 station.cost_per_minute = st.session_state.provider_costs[provider][station.name]['cost_per_minute']
 
-            # Add the network to the optimizer
-            st.session_state.gsopt.add_network(network)
+            # Add the provider to the optimizer
+            st.session_state.gsopt.add_provider(provider)
 
         st.markdown(f"""
         Created optimization problem with:
         - Optimization Window: {st.session_state.gsopt.opt_window.opt_start} to {st.session_state.gsopt.opt_window.opt_end}
         - Simulation Window: {st.session_state.gsopt.opt_window.sim_start} to {st.session_state.gsopt.opt_window.sim_end}
         - {len(st.session_state.gsopt.satellites)} satellites
-        - {len(st.session_state.gsopt.networks)} ground station networks
+        - {len(st.session_state.gsopt.providers)} ground station providers
         - {len(st.session_state.gsopt.stations)} ground stations
         """)
 
