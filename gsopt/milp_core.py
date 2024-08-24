@@ -15,8 +15,8 @@ class Node(pk.block):
 
     def __init__(self, **kwargs):
         super().__init__()
-        self.obj = kwargs['obj']
-        self.id = self.obj.id
+        self.model = kwargs['obj']
+        self.id = self.model.id
 
     def dict(self):
         d = {

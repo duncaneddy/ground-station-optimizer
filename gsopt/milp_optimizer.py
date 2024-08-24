@@ -11,11 +11,15 @@ import pyomo.opt as po
 import brahe as bh
 
 import streamlit as st
+from pyomo.common.errors import ApplicationError
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
 
 from gsopt import utils
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode, SatelliteNode
 from gsopt.models import GroundStation, Satellite, OptimizationWindow
 from gsopt.optimizer import GroundStationOptimizer
+from gsopt.utils import APPLIED_FILTER_WARNINGS
 
 logger = logging.getLogger()
 
@@ -32,13 +36,16 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
     A MILP optimizer defines
     """
 
-    def __init__(self, opt_window: OptimizationWindow):
+    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi):
         # Initialize parent classes
         pk.block.__init__(self)
         GroundStationOptimizer.__init__(self, opt_window)
 
+        # Set optimizer
+        self.optimizer = optimizer
+
         # Define MILP objective
-        self.objective = pk.objective()
+        self.obj = pk.objective()
 
         # Variables
         self.provider_nodes = pk.block_dict()
@@ -156,12 +163,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             provider_nodes=self.provider_nodes,
             station_nodes=self.station_nodes,
             contact_nodes=self.contact_nodes,
-            satellite_nodes=self.satellite_nodes
+            satellite_nodes=self.satellite_nodes,
+            opt_window=self.opt_window
         )
 
         # Generate objective
         if not self._objective_set:
             raise RuntimeError("Objective function not set. Please set the objective function before generating the problem.")
+
         self.obj._generate_objective(**inputs)
 
         # Generate constraints
@@ -171,12 +180,82 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
     def solve(self):
 
+        ts = time.perf_counter()
+
+        # Initialize problem
         if not self._problem_initialized:
             self.generate_problem()
             self._problem_initialized = True
+
+        # Select solver
+        if self.optimizer == OptimizerType.Gurobi:
+            logger.debug("Using Gurobi solver")
+            solver = po.SolverFactory("gurobi")
+
+        else:
+            logger.debug("Using backup COIN-OR CBC solver")
+            solver = po.SolverFactory("cbc")
+
+        try:
+            self.solution = solver.solve(self)
+        except ApplicationError as e:
+            logger.error(f"Solver error: {e}")
+
+        # Set solver status
+        self.solver_status = str(self.solution.solver.termination_condition)
+
+
+        te = time.perf_counter()
+        self.solve_time = te - ts
+
 
     def write_solution(self):
         pass
 
     def __str__(self):
         return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.providers)} providers, {len(self.stations)} stations, {len(self.contacts)} contacts>"
+
+    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+
+        tbl = Table(title="MILP Optimizer")
+
+        tbl.add_column("Property")
+        tbl.add_column("Value")
+
+        tbl.add_row("Contact Compute Time", utils.get_time_string(self.contact_compute_time))
+        tbl.add_row("# of Satellites", str(len(self.satellites)))
+        tbl.add_row("# of Providers", str(len(self.providers)))
+        tbl.add_row("# of Stations", str(len(self.stations)))
+        tbl.add_row("# of Contacts", str(len(self.contacts)))
+        tbl.add_row("# of Variables:", str(sum(self.n_vars.values())))
+        tbl.add_row("- Satellites", str(self.n_vars['satellites']))
+        tbl.add_row("- Satellite Station Indicators", str(self.n_vars['station_sat_indicators']))
+        tbl.add_row("- Providers", str(self.n_vars['providers']))
+        tbl.add_row("- Stations", str(self.n_vars['stations']))
+        tbl.add_row("- Contacts", str(self.n_vars['contacts']))
+        tbl.add_row("Number of Constraints", str(self.n_constraints))
+        tbl.add_row("Solver Status", self.solver_status)
+        tbl.add_row("Solve Time", utils.get_time_string(self.solve_time))
+        tbl.add_row("Objective Value", str(self.obj()))
+        tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))
+        tbl.add_row("# of Selected Stations", str(sum([sn.var() for sn in self.station_nodes.values()])))
+        tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
+        tbl.add_row("Station Use By # Of Satellite", "")
+
+        sats_by_station = { k: 0 for k in self.station_ids }
+
+        for sta in sats_by_station.keys():
+            for k, v in self.station_satellite_nodes.items():
+                if k[0] == sta:
+                    sats_by_station[sta] += v()
+
+        # Ensure display is in consistent alphabetical order
+        l = {}
+        for sta in self.stations.values():
+            l[(sta.provider, sta.name)] = f"- {sta.provider} - {sta.name}", str(sats_by_station[sta.id])
+
+        for k in sorted(l.keys()):
+            tbl.add_row(l[k][0], l[k][1])
+
+        yield tbl
+

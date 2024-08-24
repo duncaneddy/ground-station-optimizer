@@ -29,10 +29,13 @@ class OptimizationWindow():
         if sim_start > sim_end:
             raise ValueError("Simulation start time must be before simulation end time")
 
-        self.opt_start = opt_start
-        self.opt_end = opt_end
-        self.sim_start = sim_start
-        self.sim_end = sim_end
+        self.opt_start = Epoch(opt_start)
+        self.opt_end = Epoch(opt_end)
+        self.sim_start = Epoch(sim_start)
+        self.sim_end = Epoch(sim_end)
+
+        self.T_opt = self.opt_end - self.opt_start
+        self.T_sim = self.sim_end - self.sim_start
 
     @property
     def sim_duration(self):

@@ -19,15 +19,6 @@ from gsopt.models import GroundStation, GroundStationProvider, Satellite, Optimi
 
 logger = logging.getLogger()
 
-class SolverStatus(Enum):
-    """
-    Enumeration of possible solver statuses.
-    """
-    NOT_SOLVED = 0
-    SOLVED = 1
-    ERROR = 2
-
-
 class GroundStationOptimizer(metaclass=ABCMeta):
 
     def __init__(self, opt_window: OptimizationWindow):
@@ -44,7 +35,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.contacts = {}
 
         # Common optimization problem variables
-        self.solver_status = SolverStatus.NOT_SOLVED
+        self.solver_status = 'Not Solved'
         self.solve_time = 0.0
         self.contact_compute_time = 0.0
 
@@ -62,15 +53,15 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
     @property
     def provider_ids(self):
-        return set([p.id for p in self.providers])
+        return list(self.providers.keys())
 
     @property
     def station_ids(self):
-        return set([s.id for s in self.stations])
+        return list(self.stations.keys())
 
     @property
     def satellite_ids(self):
-        return set([s.id for s in self.satellites])
+        return list(self.satellites.keys())
 
     def compute_contacts(self):
         """

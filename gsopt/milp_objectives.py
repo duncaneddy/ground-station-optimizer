@@ -34,6 +34,10 @@ class MinCostObjective(pk.objective, GSOptObjective):
         pk.objective.__init__(self)
         GSOptObjective.__init__(self)
 
+        # Initialize objective expression
+        self.expr = 0
+        self.sense = pk.minimize
+
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,
                             contact_nodes: dict[str, ContactNode] | None = None,
@@ -54,6 +58,10 @@ class MaxDataDownlinkObjective(pk.objective, GSOptObjective):
         pk.objective.__init__(self)
         GSOptObjective.__init__(self)
 
+        # Initialize objective expression
+        self.expr = 0
+        self.sense = pk.maximize
+
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,
                             contact_nodes: dict[str, ContactNode] | None = None,
@@ -61,7 +69,9 @@ class MaxDataDownlinkObjective(pk.objective, GSOptObjective):
         """
         Generate the objective function.
         """
-        pass
+
+        for cn in contact_nodes.values():
+            self.expr += cn.var * cn.model.data_volume * opt_window.T_opt / opt_window.T_sim
 
 
 class MinMaxContactGapObjective(pk.objective, GSOptObjective):
@@ -73,6 +83,10 @@ class MinMaxContactGapObjective(pk.objective, GSOptObjective):
     def __init__(self, **kwargs):
         pk.objective.__init__(self)
         GSOptObjective.__init__(self)
+
+        # Initialize objective expression
+        self.expr = 0
+        self.sense = pk.minimize
 
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,

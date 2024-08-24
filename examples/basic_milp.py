@@ -133,9 +133,6 @@ for satellite in satellites:
     console.print(satellite)
     optimizer.add_satellite(satellite)
 
-# Display the optimizer
-logger.info(optimizer)
-
 # Compute contacts
 optimizer.compute_contacts()
 
@@ -157,6 +154,5 @@ optimizer.add_constraints([
 optimizer.solve()
 
 # Display the results
-logger.info(optimizer)
-logger.info(optimizer.n_vars)
-logger.info(optimizer.n_constraints)
+
+console.print(optimizer)

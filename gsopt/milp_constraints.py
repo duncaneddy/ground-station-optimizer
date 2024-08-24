@@ -186,7 +186,7 @@ class MinContactDurationConstraint(pk.constraint_list, GSOptConstraint):
         """
 
         for cn in contact_nodes.values():
-            if cn.obj.t_duration <= self.min_duration:
+            if cn.model.t_duration <= self.min_duration:
                 # Force all contacts with duration less than the minimum to be zero
                 self.append(pk.constraint(cn.var == 0))
 
