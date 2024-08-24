@@ -254,6 +254,10 @@ class GroundStationProvider():
 
         self.integration_cost = integration_cost
 
+    @property
+    def name(self):
+        return self.provider
+
     @classmethod
     def load_geojson(cls, f, integration_cost: float = 0.0):
         """

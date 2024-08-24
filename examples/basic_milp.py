@@ -8,6 +8,7 @@ import datetime
 import os
 import random
 import logging
+from itertools import groupby
 from pathlib import Path
 from rich.console import Console
 
@@ -143,15 +144,15 @@ optimizer.set_objective(
 
 # Add Constraints
 optimizer.add_constraints([
-    ConstellationDataDownlinkConstraint(),
-    SatelliteDataDownlinkConstraint(),
-    OperationalCostConstraint(),
-    StationAntennaLimitConstraint(),
-    SatelliteContactExclusionConstraint(),
-    MaxContactGapConstraint(max_gap=1800.0),
     ProviderLimitConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
-    MaxContactsPerPeriodConstraint(),
+    # ConstellationDataDownlinkConstraint(),
+    # SatelliteDataDownlinkConstraint(),
+    # OperationalCostConstraint(),
+    # StationAntennaLimitConstraint(),
+    # SatelliteContactExclusionConstraint(),
+    # MaxContactGapConstraint(max_gap=1800.0),
+    # MaxContactsPerPeriodConstraint(),
     # RequireProviderConstraint(),
     # RequireStationConstraint()
 ])
@@ -162,3 +163,8 @@ optimizer.solve()
 # Display the results
 
 console.print(optimizer)
+
+# print(optimizer.constraints[0][0].expr)
+# for i in range(2, len(optimizer.constraints)):
+#     # print(optimizer.constraints[i].num_providers)
+#     print(optimizer.constraints[i].expr)

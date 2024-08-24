@@ -200,7 +200,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
 
             self.constraints.append(pk.constraint(
-                sum([c.var for c in contacts]) <= num_station_contacts * self.station_nodes[gs_id].var
+                sum([self.contact_nodes[c.id].var for c in contact_node_group]) <= num_station_contacts * self.station_nodes[gs_id].var
             ))
 
             self.n_constraints += 1
@@ -214,7 +214,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
                 logger.debug(f'Generating constraints for station {gs_id}, for satellite {sat_id}, with {num_sat_contacts} contacts')
 
                 self.constraints.append(pk.constraint(
-                    sum([c.var for c in sat_contacts]) <= num_sat_contacts * self.station_satellite_nodes[(gs_id, sat_id)]
+                    sum([self.contact_nodes[c.id].var for c in sat_contact_group]) <= num_sat_contacts * self.station_satellite_nodes[(gs_id, sat_id)]
                 ))
 
                 self.n_constraints += 1
@@ -228,7 +228,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             logger.debug(f'Generating constraints for provider {p_id} with {num_provider_stations} stations')
 
             self.constraints.append(pk.constraint(
-                sum([s.var for s in stations]) <= num_provider_stations * self.provider_nodes[p_id].var
+                sum([self.station_nodes[s.id].var for s in station_node_group]) <= num_provider_stations * self.provider_nodes[p_id].var
             ))
 
             self.n_constraints += 1
@@ -294,24 +294,34 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("Solve Time", utils.get_time_string(self.solve_time))
         tbl.add_row("Objective Value", str(self.obj()))
         tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))
+        for provider in self.provider_nodes.values():
+            tbl.add_row(f" - {provider.model.name}", str(provider.var()))
+
         tbl.add_row("# of Selected Stations", str(sum([sn.var() for sn in self.station_nodes.values()])))
+
+        for _, station_groups in groupby(sorted(self.station_nodes.values(), key=lambda x: x.provider.name),
+                                         lambda x: x.provider.name):
+            for s in station_groups:
+                tbl.add_row(f" - {s.provider.name}-{s.model.name}", str(s.var()))
+
         tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
-        tbl.add_row("Station Use By # Of Satellite", "")
 
-        sats_by_station = { k: 0 for k in self.station_ids }
-
-        for sta in sats_by_station.keys():
-            for k, v in self.station_satellite_nodes.items():
-                if k[0] == sta:
-                    sats_by_station[sta] += v()
-
-        # Ensure display is in consistent alphabetical order
-        l = {}
-        for sta in self.stations.values():
-            l[(sta.provider, sta.name)] = f"- {sta.provider} - {sta.name}", str(sats_by_station[sta.id])
-
-        for k in sorted(l.keys()):
-            tbl.add_row(l[k][0], l[k][1])
+        # tbl.add_row("Visible Sats By Station", "")
+        #
+        # sats_by_station = { k: 0 for k in self.station_ids }
+        #
+        # for sta in sats_by_station.keys():
+        #     for k, v in self.station_satellite_nodes.items():
+        #         if k[0] == sta:
+        #             sats_by_station[sta] += v()
+        #
+        # # Ensure display is in consistent alphabetical order
+        # l = {}
+        # for sta in self.stations.values():
+        #     l[(sta.provider, sta.name)] = f"- {sta.provider} - {sta.name}", str(sats_by_station[sta.id])
+        #
+        # for k in sorted(l.keys()):
+        #     tbl.add_row(l[k][0], l[k][1])
 
         yield tbl
 
