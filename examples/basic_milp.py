@@ -26,7 +26,7 @@ random.seed(42)
 console = Console()
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format=LOG_FORMAT_VERBOSE, datefmt=LOG_DATE_FORMAT)
+logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT_VERBOSE, datefmt=LOG_DATE_FORMAT)
 logger = logging.getLogger(__name__)
 
 # Load the ground stations

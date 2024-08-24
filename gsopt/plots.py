@@ -8,17 +8,17 @@ import brahe as bh
 
 
 def select_color(owner):
-    if owner == 'AWS':
+    if owner.lower() == 'aws':
         return 'orange'
-    elif owner == 'KSAT':
+    elif owner.lower() == 'ksat':
         return 'red'
-    elif owner == 'Atlas':
+    elif owner.lower() == 'atlas':
         return 'purple'
-    elif owner == 'Viasat':
+    elif owner.lower() == 'viasat':
         return 'yellow'
-    elif owner == 'Leaf Space':
+    elif owner.lower() in ['leaf space', 'leaf']:
         return 'green'
-    elif owner == 'Azure':
+    elif owner.lower() == 'azure':
         return 'blue'
     else:
         return 'grey'

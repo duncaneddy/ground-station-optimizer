@@ -4,6 +4,7 @@ This module contains the GSOptimizer class, which is used to solve the ground st
 import logging
 import time
 from enum import Enum
+from itertools import groupby
 
 import pyomo.kernel as pk
 import pyomo.opt as po
@@ -177,6 +178,61 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         for constraint in self.constraints:
             constraint._generate_constraints(**inputs)
             self.n_constraints += len(constraint)
+
+        # Generate minimum variable constraints
+        # This must be done after the constraints are generated for the model
+        self._generate_variable_constraints()
+
+    def _generate_variable_constraints(self):
+        """
+        Generate variable relationship constraints for indicator variables. This enforces that
+        if any station is selected, the corresponding satellite-station indicator variable is set.
+        It also enforces that the indicator that if a station is used that station and provider are also indicated as
+        used.
+        """
+
+        # If a single contact for a given station is selected then that station must be selected
+        contact_nodes_sorted = sorted(self.contact_nodes.values(), key=lambda x: x.station.id)
+        for gs_id, contacts in groupby(contact_nodes_sorted, key=lambda x: x.station.id):
+            contact_node_group = list(contacts)
+            num_station_contacts = len(contact_node_group)
+
+            logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
+
+            self.constraints.append(pk.constraint(
+                sum([c.var for c in contacts]) <= num_station_contacts * self.station_nodes[gs_id].var
+            ))
+
+            self.n_constraints += 1
+
+            # If a single contact for a given satellite is selected then that satellite-station indicator must be selected
+            contacts_by_satellite_sorted = sorted(contact_node_group, key=lambda x: x.satellite.id)
+            for sat_id, sat_contacts in groupby(contacts_by_satellite_sorted, key=lambda x: x.satellite.id):
+                sat_contact_group = list(sat_contacts)
+                num_sat_contacts = len(sat_contact_group)
+
+                logger.debug(f'Generating constraints for station {gs_id}, for satellite {sat_id}, with {num_sat_contacts} contacts')
+
+                self.constraints.append(pk.constraint(
+                    sum([c.var for c in sat_contacts]) <= num_sat_contacts * self.station_satellite_nodes[(gs_id, sat_id)]
+                ))
+
+                self.n_constraints += 1
+
+        # If a single station for a given provider is selected then that provider must be selected
+        station_nodes_sorted = sorted(self.station_nodes.values(), key=lambda x: x.provider.id)
+        for p_id, stations in groupby(station_nodes_sorted, key=lambda x: x.provider.id):
+            station_node_group = list(stations)
+            num_provider_stations = len(station_node_group)
+
+            logger.debug(f'Generating constraints for provider {p_id} with {num_provider_stations} stations')
+
+            self.constraints.append(pk.constraint(
+                sum([s.var for s in stations]) <= num_provider_stations * self.provider_nodes[p_id].var
+            ))
+
+            self.n_constraints += 1
+
 
     def solve(self):
 

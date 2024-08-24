@@ -100,6 +100,7 @@ class ContactNode(BinaryNode):
 
         self.station = kwargs['station']
         self.provider = kwargs['provider']
+        self.satellite = kwargs['satellite']
 
     def dict(self):
         d = super().dict()
