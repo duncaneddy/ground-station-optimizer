@@ -31,7 +31,7 @@ class GSOptConstraint(metaclass=ABCMeta):
         pass
 
 
-class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
+class MinConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the constellation is greater than or equal to
     the given threshold over a given period.
@@ -86,7 +86,7 @@ class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
             te += self.step
 
 
-class SatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
+class MinSatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the satellite is greater than or equal to
     a given threshold over a given period.
@@ -183,7 +183,7 @@ class SatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
                     te += self.step
 
 
-class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
+class MaxOperationalCostConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the operational cost of the constellation is less than or equal to a given
     amount over a desired time period.
@@ -224,7 +224,7 @@ class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
 
 
 
-class StationAntennaLimitConstraint(pk.constraint_list, GSOptConstraint):
+class MaxAntennaUsageConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the number of simultaneous contacts a station can have is less than or equal
     to the number of antennas at the station.
@@ -317,7 +317,7 @@ class MaxContactGapConstraint(pk.constraint_list, GSOptConstraint):
         pass
 
 
-class ProviderLimitConstraint(pk.constraint_list, GSOptConstraint):
+class MaxProvidersConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint that enforces the number of ground station providers that can be selected is less than or equal to
     the given number.

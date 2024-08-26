@@ -144,13 +144,13 @@ optimizer.set_objective(
 
 # Add Constraints
 optimizer.add_constraints([
-    ProviderLimitConstraint(num_providers=3),
+    MaxProvidersConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
-    ConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
-    SatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
-    SatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
-    OperationalCostConstraint(value=200000),
-    StationAntennaLimitConstraint(), # TODO: This needs to be tested in a case with a tight constraint
+    MinConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
+    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
+    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
+    MaxOperationalCostConstraint(value=200000),
+    MaxAntennaUsageConstraint(), # TODO: This needs to be tested in a case with a tight constraint
     SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
