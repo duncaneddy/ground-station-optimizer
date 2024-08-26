@@ -153,8 +153,8 @@ optimizer.add_constraints([
     # SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
     # MaxContactsPerPeriodConstraint(),
-    # RequireProviderConstraint(),
-    # RequireStationConstraint()
+    RequireProviderConstraint('Azure'),
+    RequireStationConstraint(name='Awarua', provider='Atlas')
 ])
 
 # Solve the optimization problem

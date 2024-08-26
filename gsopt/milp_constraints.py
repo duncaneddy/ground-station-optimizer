@@ -2,11 +2,15 @@
 Module containing different objective functions for MILP optimization
 """
 
+import logging
+
 from abc import abstractmethod, ABCMeta
 import pyomo.kernel as pk
 
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode
 from gsopt.models import OptimizationWindow
+
+logger = logging.getLogger(__name__)
 
 
 class GSOptConstraint(metaclass=ABCMeta):
@@ -225,21 +229,39 @@ class RequireProviderConstraint(pk.constraint_list, GSOptConstraint):
     Constraint to require a specific provider to be selected.
     """
 
-    def __init__(self, id: str = None, **kwargs):
+    def __init__(self, key: str = None, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-        if id is None:
-            raise ValueError("Provider ID must be provided.")
+        if key is None:
+            raise ValueError("A unique key (id or name) for the provider must be provided")
 
-        self.required_id = id
+        self.key = key
+        self._matched_id = None
 
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
 
-        self.append(pk.constraint(provider_nodes[self.required_id].var == 1))
+        # Note: this mattaching has to be done in the _generate_constraints method not in the __init__ method
+        # because the provider_nodes dictionary is not available at the time of object creation. It is
+        # passed as an argument to the _generate_constraints method at the time of optimization.
+
+        # Attempt to match the key to the provider id
+        if self.key in provider_nodes.keys():
+            self._matched_id = self.key
+
+        # Otherwise attempt to match the key to the provider name
+        for pn in provider_nodes.values():
+            if pn.model.name.lower() == self.key.lower():
+                self._matched_id = pn.model.id
+                break
+
+        if self._matched_id is None:
+            raise RuntimeError(f"Could not find a provider with key \"{self.key}\"")
+
+        self.append(pk.constraint(provider_nodes[self._matched_id].var == 1))
 
 
 class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
@@ -247,18 +269,46 @@ class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
     Constraint to require a specific station to be selected.
     """
 
-    def __init__(self, id: str = None, **kwargs):
+    def __init__(self, id: str | None = None, name: str | None = None, provider: str | None = None, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-        if id is None:
-            raise ValueError("Station ID must be provided.")
+        self.required_id = None
+        self.required_name = None
+        self.required_provider = None
 
-        self.required_id = id
+        if id is None:
+            if name is None or provider is None:
+                raise ValueError("Either the station id or the station name and provider name must be provided.")
+
+            self.required_provider = provider
+            self.required_name = name
+
+        if id is not None:
+            if name is not None or provider is not None:
+                raise ValueError("Providing the station id requires no other arguments.")
+
+            self.required_id = id
+
+        self._matched_id = None
 
     def _generate_constraints(self, station_nodes: dict[str, StationNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
 
-        self.append(pk.constraint(station_nodes[self.required_id].var == 1))
+        # If and ID was provided, attempt to match it
+        if self.required_id is not None:
+            if self.required_id in station_nodes.keys():
+                self.append(pk.constraint(station_nodes[self.required_id].var == 1))
+                return
+            else:
+                raise RuntimeError(f"Could not find a station with id \"{self.required_id}\".")
+
+        # Otherwise attempt to match the name and provider
+        for sn in station_nodes.values():
+            if sn.model.name.lower() == self.required_name.lower() and sn.model.provider.lower() == self.required_provider.lower():
+                self.append(pk.constraint(station_nodes[sn.id].var == 1))
+                return
+
+        raise RuntimeError(f"Could not find a station with name \"{self.required_name}\" and provider \"{self.required_provider}\".")

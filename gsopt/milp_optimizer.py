@@ -324,4 +324,3 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         #     tbl.add_row(l[k][0], l[k][1])
 
         yield tbl
-
