@@ -147,13 +147,14 @@ optimizer.add_constraints([
     ProviderLimitConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
     ConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
-    # SatelliteDataDownlinkConstraint(),
+    SatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
+    SatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     # OperationalCostConstraint(),
     # StationAntennaLimitConstraint(),
     # SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
-    MaxContactsPerPeriodConstraint(value=100, period=86400.0, step=300),
-    RequireProviderConstraint('Ksat'),
+    MaxContactsPerPeriodConstraint(value=4, period=86400.0, step=300),
+    RequireProviderConstraint('Azure'),
     RequireStationConstraint(name='Oregon', provider='Aws')
 ])
 
@@ -164,7 +165,11 @@ optimizer.solve()
 
 console.print(optimizer)
 
-# print(optimizer.constraints[0][0].expr)
+# print(optimizer.constraints[2][0].expr)
+# print(len(optimizer.constraints[3]))
 # for i in range(2, len(optimizer.constraints)):
 #     # print(optimizer.constraints[i].num_providers)
 #     print(optimizer.constraints[i].expr)
+
+# print(list(sorted(optimizer.contact_nodes.values(), key=lambda x: x.model.t_start))[0].model.t_duration)
+# print(list(sorted(optimizer.contact_nodes.values(), key=lambda x: x.model.t_start))[0].model.datarate)

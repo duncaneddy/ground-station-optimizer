@@ -3,6 +3,7 @@ This module contains the GSOptimizer class, which is used to solve the ground st
 '''
 import logging
 import time
+import copy
 from enum import Enum
 from itertools import groupby
 
@@ -70,6 +71,22 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         self._problem_initialized = False
         self._objective_set = False
+
+    @property
+    def opt_start(self):
+        return copy.deepcopy(self.opt_window.opt_start)
+
+    @property
+    def opt_end(self):
+        return copy.deepcopy(self.opt_window.opt_end)
+
+    @property
+    def sim_start(self):
+        return copy.deepcopy(self.opt_window.sim_start)
+
+    @property
+    def sim_end(self):
+        return copy.deepcopy(self.opt_window.sim_end)
 
     def set_objective(self, objective):
         """
@@ -290,7 +307,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("- Stations", str(self.n_vars['stations']))
         tbl.add_row("- Contacts", str(self.n_vars['contacts']))
         tbl.add_row("Number of Constraints", str(self.n_constraints))
-        tbl.add_row("Solver Status", self.solver_status)
+        tbl.add_row("Solver Status", str(self.solver_status).upper())
         tbl.add_row("Solve Time", utils.get_time_string(self.solve_time))
         tbl.add_row("Objective Value", str(self.obj()))
         tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))

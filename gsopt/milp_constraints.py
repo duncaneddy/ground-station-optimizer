@@ -2,6 +2,7 @@
 Module containing different objective functions for MILP optimization
 """
 
+import copy
 import logging
 
 from abc import abstractmethod, ABCMeta
@@ -39,7 +40,7 @@ class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
         step (float): The interval at which the constraint is enforced in seconds.
     """
 
-    def __init__(self, value: float = 16, period: float = 86400.0, step: float = 300, **kwargs):
+    def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
@@ -63,20 +64,20 @@ class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
         Generate the constraint_list function.
         """
 
-        ts = opt_window.sim_start  # Working variable for the start of the current period
-        te = ts + self.period  # Working variable for the end of the current period
+        ts = copy.deepcopy(opt_window.sim_start)  # Working variable for the start of the current period
+        te = copy.deepcopy(ts + self.period)  # Working variable for the end of the current period
 
         t_max = opt_window.sim_end  # The end of the constraint period
 
         # Get contacts in the current period, sorted by start time
-        contacts = sorted(contact_nodes.values(), key=lambda cn: cn.model.t_start)
+        contacts = sorted(list(contact_nodes.values()), key=lambda cn: cn.model.t_start)
 
         while te <= t_max:
             # Get contacts in the current period
             contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, contacts)
 
             # Add the constraint
-            self.append(pk.constraint(sum(min(cn.satellite.datarate, cn.station.datarate) * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+            self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
 
             # Move to the next period
             ts += self.step
@@ -88,13 +89,18 @@ class SatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
     Constraint function that enforces that the total data downlinked by the satellite is greater than or equal to
     a given threshold over a given period.
 
+    If a satellite key is provided, the constraint is applied to that satellite only. Otherwise, the constraint is
+    applied to each satellite in the constellation.
+
     Args:
         value (float): The minimum data downlinked by the satellite in bits over the period.
         period (float): The period over which the value is enforced in seconds.
         step (float): The interval at which the constraint is enforced in seconds.
+        satellite_key (str): The unique key (id or name) of the satellite to which the constraint applies.
     """
 
-    def __init__(self, value: float = 16, period: float = 86400.0, step: float = 300, **kwargs):
+    def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300,
+                 satellite_key: str | int | None = None, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
@@ -111,14 +117,68 @@ class SatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
         self.period = period
         self.step = step
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
-                             station_nodes: dict[str, StationNode] | None = None,
+
+        self.satellite_key = satellite_key
+        self._matched_id = None
+
+    def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
-        pass
+
+        t_max = opt_window.sim_end  # The end of the constraint period
+
+        # If a satellite key was provided, attempt to match it
+        if self.satellite_key is not None:
+            satellite_contacts = list(filter(lambda cn:
+                                        self.satellite_key in [cn.satellite.id, cn.satellite.name, cn.satellite.satcat_id], contact_nodes.values()))
+
+            if len(satellite_contacts) == 0:
+                raise RuntimeError(f"Could not find a satellite with key \"{self.satellite_key}\".")
+
+            # Sort the contacts by start time
+            satellite_contacts = sorted(satellite_contacts, key=lambda cn: cn.model.t_start)
+
+            # Apply the constraint to the satellite
+            ts = copy.deepcopy(opt_window.sim_start)  # Working variable for the start of the current period
+            te = copy.deepcopy(ts + self.period)  # Working variable for the end of the current period
+
+            while te <= t_max:
+                # Get contacts in the current period
+                contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, satellite_contacts)
+
+                # Add the constraint
+                self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+
+                # Move to the next period
+                ts += self.step
+                te += self.step
+
+        else:
+            # Get unique satellite ids:
+            satellite_ids = set([cn.satellite.id for cn in contact_nodes.values()])
+
+            for satellite_id in satellite_ids:
+                satellite_contacts = filter(lambda cn: cn.satellite.id == satellite_id, contact_nodes.values())
+
+                # Sort the contacts by start time
+                satellite_contacts = sorted(satellite_contacts, key=lambda cn: cn.model.t_start)
+
+                ts = copy.deepcopy(opt_window.sim_start)  # Working variable for the start of the current period
+                te = copy.deepcopy(ts + self.period)  # Working variable for the end of the current period
+
+                while te <= t_max:
+                    # Get contacts in the current period
+                    contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, satellite_contacts)
+
+                    # Add the constraint
+                    self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+
+                    # Move to the next period
+                    ts += self.step
+                    te += self.step
 
 
 class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
@@ -133,7 +193,7 @@ class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
+    def _generate_constraints(self,
                              station_nodes: dict[str, StationNode] | None = None,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
@@ -284,8 +344,8 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
         Generate the constraint_list function.
         """
 
-        ts = opt_window.sim_start  # Working variable for the start of the current period
-        te = ts + self.period      # Working variable for the end of the current period
+        ts = copy.deepcopy(opt_window.sim_start)  # Working variable for the start of the current period
+        te = copy.deepcopy(ts + self.period)      # Working variable for the end of the current period
 
         t_max = opt_window.sim_end  # The end of the constraint period
 
