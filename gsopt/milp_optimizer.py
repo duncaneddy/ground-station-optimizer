@@ -174,6 +174,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         Build the underlying MILP objetive and constraints
         """
 
+        if not self._objective_set:
+            raise RuntimeError("Objective function not set. Please set the objective function before generating the problem.")
+
+
         # Generate nodes to ensure variables exist
         self.generate_nodes()
 
@@ -185,16 +189,15 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             opt_window=self.opt_window
         )
 
-        # Generate objective
-        if not self._objective_set:
-            raise RuntimeError("Objective function not set. Please set the objective function before generating the problem.")
-
-        self.obj._generate_objective(**inputs)
-
         # Generate constraints
         for constraint in self.constraints:
             constraint._generate_constraints(**inputs)
             self.n_constraints += len(constraint)
+
+        # Generate objective function
+        # We do this after the constraints since some objectives (MinMaxContactGapObjective) require additional
+        # constraints to be generated, and it's nicer for debugging if all user-specified constraints are generated first
+        self.obj._generate_objective(**inputs)
 
         # Generate minimum variable constraints
         # This must be done after the constraints are generated for the model

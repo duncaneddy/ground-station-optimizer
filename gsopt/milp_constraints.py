@@ -191,9 +191,14 @@ class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
     Operational costs are monthly station use costs and contact costs.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, value: float | None = None, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
+
+        if not value:
+            raise ValueError("Value must be provided.")
+
+        self.value = value
 
     def _generate_constraints(self,
                              station_nodes: dict[str, StationNode] | None = None,
@@ -202,7 +207,21 @@ class OperationalCostConstraint(pk.constraint_list, GSOptConstraint):
         """
         Generate the constraint_list function.
         """
-        pass
+
+        # Define an expression for the operational cost
+        expr = pk.expression(0)
+
+        # Add station use costs
+        for sn in station_nodes.values():
+            expr += sn.model.monthly_cost * sn.var
+
+        # Add contact costs
+        for cn in contact_nodes.values():
+            expr += (cn.model.cost_per_minute * cn.model.t_duration + cn.model.cost_per_pass) * contact_nodes[cn.id].var
+
+        # Add constraint cost
+        self.append(pk.constraint(expr <= self.value))
+
 
 
 class StationAntennaLimitConstraint(pk.constraint_list, GSOptConstraint):
