@@ -152,9 +152,9 @@ optimizer.add_constraints([
     # StationAntennaLimitConstraint(),
     # SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
-    # MaxContactsPerPeriodConstraint(),
-    RequireProviderConstraint('Azure'),
-    RequireStationConstraint(name='Awarua', provider='Atlas')
+    MaxContactsPerPeriodConstraint(limit=100, period=86400.0, step=300),
+    RequireProviderConstraint('Ksat'),
+    RequireStationConstraint(name='Oregon', provider='Aws')
 ])
 
 # Solve the optimization problem
