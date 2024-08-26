@@ -151,9 +151,9 @@ optimizer.add_constraints([
     SatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     # OperationalCostConstraint(),
     # StationAntennaLimitConstraint(),
-    # SatelliteContactExclusionConstraint(),
+    SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
-    MaxContactsPerPeriodConstraint(value=4, period=86400.0, step=300),
+    MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
     RequireProviderConstraint('Azure'),
     RequireStationConstraint(name='Oregon', provider='Aws')
 ])

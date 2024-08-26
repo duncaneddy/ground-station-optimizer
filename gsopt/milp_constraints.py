@@ -6,6 +6,8 @@ import copy
 import logging
 
 from abc import abstractmethod, ABCMeta
+from itertools import combinations, groupby
+
 import pyomo.kernel as pk
 
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode
@@ -232,15 +234,27 @@ class SatelliteContactExclusionConstraint(pk.constraint_list, GSOptConstraint):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-    def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
-                             station_nodes: dict[str, StationNode] | None = None,
+    def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
-        pass
 
+        # Filter satellites by contacts
+        contact_nodes_by_satellite = sorted(contact_nodes.values(), key=lambda cn: cn.satellite.id)
+
+        for sat_id, sat_contacts in groupby(contact_nodes_by_satellite, lambda cn: cn.satellite.id):
+
+            # Sort contacts by start time
+            sat_contacts = sorted(sat_contacts, key=lambda cn: cn.model.t_start)
+
+            # Test all combinations of two contacts to see if they overlap
+            # This could be done more efficiently, but the number of contacts is generally expected to be
+            # small enough that this is not a problem
+            for x, y in combinations(sat_contacts, 2):
+                if x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end:
+                    self.append(pk.constraint(x.var + y.var <= 1))
 
 class MaxContactGapConstraint(pk.constraint_list, GSOptConstraint):
     """
