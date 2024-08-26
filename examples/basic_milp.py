@@ -146,13 +146,13 @@ optimizer.set_objective(
 optimizer.add_constraints([
     ProviderLimitConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
-    # ConstellationDataDownlinkConstraint(),
+    ConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
     # SatelliteDataDownlinkConstraint(),
     # OperationalCostConstraint(),
     # StationAntennaLimitConstraint(),
     # SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
-    MaxContactsPerPeriodConstraint(limit=100, period=86400.0, step=300),
+    MaxContactsPerPeriodConstraint(value=100, period=86400.0, step=300),
     RequireProviderConstraint('Ksat'),
     RequireStationConstraint(name='Oregon', provider='Aws')
 ])

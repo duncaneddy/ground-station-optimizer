@@ -32,30 +32,84 @@ class ConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the constellation is greater than or equal to
     the given threshold over a given period.
+
+    Args:
+        value (float): The minimum data downlinked by the constellation in bits over the period.
+        period (float): The period over which the value is enforced in seconds.
+        step (float): The interval at which the constraint is enforced in seconds.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, value: float = 16, period: float = 86400.0, step: float = 300, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
-    def _generate_constraints(self, data_min: float = 0.0,
+        if period <= 0:
+            raise ValueError("Period must be greater than zero.")
+
+        if value <= 0:
+            raise ValueError("Limit must be greater than zero.")
+
+        if step <= 0:
+            raise ValueError("Step must be greater than zero.")
+
+        self.value = value
+        self.period = period
+        self.step = step
+
+    def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
         """
         Generate the constraint_list function.
         """
-        pass
+
+        ts = opt_window.sim_start  # Working variable for the start of the current period
+        te = ts + self.period  # Working variable for the end of the current period
+
+        t_max = opt_window.sim_end  # The end of the constraint period
+
+        # Get contacts in the current period, sorted by start time
+        contacts = sorted(contact_nodes.values(), key=lambda cn: cn.model.t_start)
+
+        while te <= t_max:
+            # Get contacts in the current period
+            contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, contacts)
+
+            # Add the constraint
+            self.append(pk.constraint(sum(min(cn.satellite.datarate, cn.station.datarate) * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+
+            # Move to the next period
+            ts += self.step
+            te += self.step
 
 
 class SatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the satellite is greater than or equal to
     a given threshold over a given period.
+
+    Args:
+        value (float): The minimum data downlinked by the satellite in bits over the period.
+        period (float): The period over which the value is enforced in seconds.
+        step (float): The interval at which the constraint is enforced in seconds.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, value: float = 16, period: float = 86400.0, step: float = 300, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
+
+        if period <= 0:
+            raise ValueError("Period must be greater than zero.")
+
+        if value <= 0:
+            raise ValueError("Limit must be greater than zero.")
+
+        if step <= 0:
+            raise ValueError("Step must be greater than zero.")
+
+        self.value = value
+        self.period = period
+        self.step = step
 
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
                              station_nodes: dict[str, StationNode] | None = None,
@@ -200,25 +254,25 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
     limit. The usual period is a day.
 
     Args:
-        limit (int): The maximum number of contacts allowed in the period.
-        period (float): The period over which the limit is enforced in seconds.
-        step (int): The interval at which the constraint is enforced in seconds.
+        value (int): The maximum number of contacts allowed in the period.
+        period (float): The period over which the value is enforced in seconds.
+        step (float): The interval at which the constraint is enforced in seconds.
     """
 
-    def __init__(self, limit: int = 16, period: float = 86400.0, step: float = 300, **kwargs):
+    def __init__(self, value: int = 16, period: float = 86400.0, step: float = 300, **kwargs):
         pk.constraint_list.__init__(self)
         GSOptConstraint.__init__(self)
 
         if period <= 0:
             raise ValueError("Period must be greater than zero.")
 
-        if limit <= 0:
+        if value <= 0:
             raise ValueError("Limit must be greater than zero.")
 
         if step <= 0:
             raise ValueError("Step must be greater than zero.")
 
-        self.limit = limit
+        self.value = value
         self.period = period
         self.step = step
 
@@ -231,7 +285,7 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
         """
 
         ts = opt_window.sim_start  # Working variable for the start of the current period
-        te = ts + self.period    # Working variable for the end of the current period
+        te = ts + self.period      # Working variable for the end of the current period
 
         t_max = opt_window.sim_end  # The end of the constraint period
 
@@ -243,7 +297,7 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
             contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, contacts)
 
             # Add the constraint
-            self.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts_in_period) <= self.limit))
+            self.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts_in_period) <= self.value))
 
             # Move to the next period
             ts += self.step
