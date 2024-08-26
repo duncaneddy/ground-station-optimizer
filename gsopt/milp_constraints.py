@@ -222,7 +222,29 @@ class StationAntennaLimitConstraint(pk.constraint_list, GSOptConstraint):
         """
         Generate the constraint_list function.
         """
-        pass
+
+        # Group nodes by station
+        contact_nodes_by_station = sorted(contact_nodes.values(), key=lambda cn: cn.station.id)
+
+        for station_id, station_contacts in groupby(contact_nodes_by_station, lambda cn: cn.station.id):
+
+            # Get number of antennas for station
+            antennas = station_nodes[station_id].model.antennas
+
+            # Sort contacts by start time
+            station_contacts = sorted(station_contacts, key=lambda cn: cn.model.t_start)
+
+            # This is an inefficient way to enforce the constraint, but it is simple
+            # It works by getting all potential combinations of contacts for the station that could result in the
+            # constraint being exceeded, then checks that this combination has a time where all contacts do indeed
+            # overlap, then it enforces that only up to the antenna limit is taken.
+
+            # The +1 is used because we only want to check combinations which might exceed the constraint
+            contact_combos = list(combinations(station_contacts, antennas + 1))
+
+            for contacts in contact_combos:
+                if all(x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end for x, y in combinations(contacts, 2)):
+                    self.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts) <= antennas))
 
 
 class SatelliteContactExclusionConstraint(pk.constraint_list, GSOptConstraint):

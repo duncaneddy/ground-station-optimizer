@@ -150,7 +150,7 @@ optimizer.add_constraints([
     SatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
     SatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     # OperationalCostConstraint(),
-    # StationAntennaLimitConstraint(),
+    StationAntennaLimitConstraint(), # TODO: This needs to be tested in a case with a tight constraint
     SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(max_gap=1800.0),
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
