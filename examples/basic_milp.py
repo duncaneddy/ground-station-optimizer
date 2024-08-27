@@ -152,9 +152,9 @@ optimizer.add_constraints([
     MaxOperationalCostConstraint(value=200000),
     MaxAntennaUsageConstraint(), # TODO: This needs to be tested in a case with a tight constraint
     SatelliteContactExclusionConstraint(),
-    # MaxContactGapConstraint(max_gap=1800.0),
+    MaxContactGapConstraint(value=60.0*90),
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
-    RequireProviderConstraint('Azure'),
+    RequireProviderConstraint('Viasat'),
     RequireStationConstraint(name='Oregon', provider='Aws')
 ])
 

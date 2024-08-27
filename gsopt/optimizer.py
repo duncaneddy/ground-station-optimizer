@@ -38,6 +38,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.solver_status = 'Not Solved'
         self.solve_time = 0.0
         self.contact_compute_time = 0.0
+        self.problem_setup_time = 0.0
 
     def add_satellite(self, satellite: Satellite):
         self.satellites[satellite.id] = satellite

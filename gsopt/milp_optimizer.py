@@ -57,6 +57,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         self.station_satellite_nodes = pk.variable_dict()
 
         # Constraints container
+        self.constraint_blocks = pk.block_list()
         self.constraints = pk.constraint_list()
 
         # Metadata
@@ -116,7 +117,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             constraint (pk.constraints): Constraint to add to the model
         """
 
-        if isinstance(constraint, (pk.constraint, pk.constraint_list, pk.constraint_dict)):
+        if isinstance(constraint, pk.block):
+            self.constraint_blocks.append(constraint)
+
+        elif isinstance(constraint, (pk.constraint, pk.constraint_list, pk.constraint_dict)):
             self.constraints.append(constraint)
         else:
             raise ValueError(f"Constraint must be of type pk.constraint, pk.constraint_list, or pk.constraint_dict")
@@ -177,6 +181,8 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         if not self._objective_set:
             raise RuntimeError("Objective function not set. Please set the objective function before generating the problem.")
 
+        logger.info("Generating MILP problem...")
+        ts = time.perf_counter()
 
         # Generate nodes to ensure variables exist
         self.generate_nodes()
@@ -190,8 +196,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         )
 
         # Generate constraints
+        for constraint in self.constraint_blocks:
+            if hasattr(constraint, '_generate_constraints'):
+                constraint._generate_constraints(**inputs)
+            self.n_constraints += len(constraint.constraints)
+
         for constraint in self.constraints:
-            constraint._generate_constraints(**inputs)
+            if hasattr(constraint, '_generate_constraints'):
+                constraint._generate_constraints(**inputs)
             self.n_constraints += len(constraint)
 
         # Generate objective function
@@ -202,6 +214,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         # Generate minimum variable constraints
         # This must be done after the constraints are generated for the model
         self._generate_variable_constraints()
+
+        te = time.perf_counter()
+        self.problem_setup_time = te - ts
+        logger.info(f"Finished generating MILP problem with {self.n_constraints} constraints. Took: {utils.get_time_string(te - ts)}.")
 
     def _generate_variable_constraints(self):
         """
@@ -217,7 +233,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             contact_node_group = list(contacts)
             num_station_contacts = len(contact_node_group)
 
-            logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
+            # logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
 
             self.constraints.append(pk.constraint(
                 sum([self.contact_nodes[c.id].var for c in contact_node_group]) <= num_station_contacts * self.station_nodes[gs_id].var
@@ -231,7 +247,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
                 sat_contact_group = list(sat_contacts)
                 num_sat_contacts = len(sat_contact_group)
 
-                logger.debug(f'Generating constraints for station {gs_id}, for satellite {sat_id}, with {num_sat_contacts} contacts')
+                # logger.debug(f'Generating constraints for station {gs_id}, for satellite {sat_id}, with {num_sat_contacts} contacts')
 
                 self.constraints.append(pk.constraint(
                     sum([self.contact_nodes[c.id].var for c in sat_contact_group]) <= num_sat_contacts * self.station_satellite_nodes[(gs_id, sat_id)]
@@ -245,7 +261,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             station_node_group = list(stations)
             num_provider_stations = len(station_node_group)
 
-            logger.debug(f'Generating constraints for provider {p_id} with {num_provider_stations} stations')
+            # logger.debug(f'Generating constraints for provider {p_id} with {num_provider_stations} stations')
 
             self.constraints.append(pk.constraint(
                 sum([self.station_nodes[s.id].var for s in station_node_group]) <= num_provider_stations * self.provider_nodes[p_id].var
@@ -310,6 +326,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("- Stations", str(self.n_vars['stations']))
         tbl.add_row("- Contacts", str(self.n_vars['contacts']))
         tbl.add_row("Number of Constraints", str(self.n_constraints))
+        tbl.add_row("Setup Time", str(utils.get_time_string(self.problem_setup_time)))
         tbl.add_row("Solver Status", str(self.solver_status).upper())
         tbl.add_row("Solve Time", utils.get_time_string(self.solve_time))
         tbl.add_row("Objective Value", str(self.obj()))

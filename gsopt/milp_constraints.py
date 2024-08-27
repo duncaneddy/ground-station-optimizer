@@ -24,14 +24,15 @@ class GSOptConstraint(metaclass=ABCMeta):
     """
 
     def __init__(self):
-        pass
+
+        self.constraints = pk.constraint_list()
 
     @abstractmethod
     def _generate_constraints(self):
         pass
 
 
-class MinConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
+class MinConstellationDataDownlinkConstraint(pk.block, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the constellation is greater than or equal to
     the given threshold over a given period.
@@ -43,7 +44,7 @@ class MinConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint
     """
 
     def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if period <= 0:
@@ -79,14 +80,14 @@ class MinConstellationDataDownlinkConstraint(pk.constraint_list, GSOptConstraint
             contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, contacts)
 
             # Add the constraint
-            self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+            self.constraints.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
 
             # Move to the next period
             ts += self.step
             te += self.step
 
 
-class MinSatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
+class MinSatelliteDataDownlinkConstraint(pk.block, GSOptConstraint):
     """
     Constraint function that enforces that the total data downlinked by the satellite is greater than or equal to
     a given threshold over a given period.
@@ -103,7 +104,7 @@ class MinSatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
 
     def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300,
                  satellite_key: str | int | None = None, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if period <= 0:
@@ -152,7 +153,7 @@ class MinSatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
                 contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, satellite_contacts)
 
                 # Add the constraint
-                self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+                self.constraints.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
 
                 # Move to the next period
                 ts += self.step
@@ -176,14 +177,14 @@ class MinSatelliteDataDownlinkConstraint(pk.constraint_list, GSOptConstraint):
                     contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, satellite_contacts)
 
                     # Add the constraint
-                    self.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
+                    self.constraints.append(pk.constraint(sum(cn.model.datarate * cn.model.t_duration * contact_nodes[cn.id].var for cn in contacts_in_period) >= self.value))
 
                     # Move to the next period
                     ts += self.step
                     te += self.step
 
 
-class MaxOperationalCostConstraint(pk.constraint_list, GSOptConstraint):
+class MaxOperationalCostConstraint(pk.block, GSOptConstraint):
     """
     Constraint function that enforces that the operational cost of the constellation is less than or equal to a given
     amount over a desired time period.
@@ -192,7 +193,7 @@ class MaxOperationalCostConstraint(pk.constraint_list, GSOptConstraint):
     """
 
     def __init__(self, value: float | None = None, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if not value:
@@ -217,21 +218,22 @@ class MaxOperationalCostConstraint(pk.constraint_list, GSOptConstraint):
 
         # Add contact costs
         for cn in contact_nodes.values():
+            # TODO: Need to weight this by the simulation time period to get monthly cost
             expr += (cn.model.cost_per_minute * cn.model.t_duration + cn.model.cost_per_pass) * contact_nodes[cn.id].var
 
         # Add constraint cost
-        self.append(pk.constraint(expr <= self.value))
+        self.constraints.append(pk.constraint(expr <= self.value))
 
 
 
-class MaxAntennaUsageConstraint(pk.constraint_list, GSOptConstraint):
+class MaxAntennaUsageConstraint(pk.block, GSOptConstraint):
     """
     Constraint function that enforces that the number of simultaneous contacts a station can have is less than or equal
     to the number of antennas at the station.
     """
 
     def __init__(self, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
@@ -263,16 +265,16 @@ class MaxAntennaUsageConstraint(pk.constraint_list, GSOptConstraint):
 
             for contacts in contact_combos:
                 if all(x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end for x, y in combinations(contacts, 2)):
-                    self.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts) <= antennas))
+                    self.constraints.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts) <= antennas))
 
 
-class SatelliteContactExclusionConstraint(pk.constraint_list, GSOptConstraint):
+class SatelliteContactExclusionConstraint(pk.block, GSOptConstraint):
     """
     Enforces that a satellite cannot have contacts with two different stations at the same time.
     """
 
     def __init__(self, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
     def _generate_constraints(self,
@@ -295,17 +297,25 @@ class SatelliteContactExclusionConstraint(pk.constraint_list, GSOptConstraint):
             # small enough that this is not a problem
             for x, y in combinations(sat_contacts, 2):
                 if x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end:
-                    self.append(pk.constraint(x.var + y.var <= 1))
+                    self.constraints.append(pk.constraint(x.var + y.var <= 1))
 
-class MaxContactGapConstraint(pk.constraint_list, GSOptConstraint):
+class MaxContactGapConstraint(pk.block, GSOptConstraint):
     """
     Constraint that enforces that the time between two contacts for any satellite is less than or equal to a given
     time period.
+
+    Args:
+        value (float): The maximum time between contacts in seconds.
     """
 
-    def __init__(self, **kwargs):
-        pk.constraint_list.__init__(self)
+    def __init__(self, value: float | None = None, **kwargs):
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
+
+        if not value:
+            raise ValueError("Value must be provided.")
+
+        self.value = value
 
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
                              station_nodes: dict[str, StationNode] | None = None,
@@ -314,17 +324,47 @@ class MaxContactGapConstraint(pk.constraint_list, GSOptConstraint):
         """
         Generate the constraint_list function.
         """
-        pass
+
+        # Group contacts by satellite
+        contact_nodes_by_satellite = sorted(contact_nodes.values(), key=lambda cn: cn.satellite.id)
+
+        self.variable_dict = pk.variable_dict()
+
+        for sat_id, sat_contacts in groupby(contact_nodes_by_satellite, lambda cn: cn.satellite.id):
+            # Sort contacts by start time
+            sat_contacts = list(sorted(sat_contacts, key=lambda cn: cn.model.t_start))
+
+            # For each contact, create an auxiliary variable for the next scheduled task
+            for i, cn_i in enumerate(sat_contacts[0:len(sat_contacts) - 1]):
+
+                # Working expression for the next scheduled contact
+                expr = pk.expression(0)
+
+                for j, cn_j in enumerate(sat_contacts[i + 1:]):
+                    # Auxiliary variable if contact j is the next scheduled after contact i
+                    self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] = pk.variable(value=0, domain=pk.Binary)
+
+                    expr += self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)]
+
+                    # Constraints to ensure that if the auxiliary variable is 1, then both x_i and x_j are 1
+                    self.constraints.append(pk.constraint(self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] <= contact_nodes[cn_i.id].var))
+                    self.constraints.append(pk.constraint(self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] <= contact_nodes[cn_j.id].var))
+
+                    # Add constraint to ensure that the associated scheduled gap is less than the maximum
+                    self.constraints.append(pk.constraint((cn_j.model.t_start - cn_i.model.t_end) * self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] <= self.value))
+
+                # Add constraint that only one of the auxiliary variables can be 1 if the contact node is scheduled
+                self.constraints.append(pk.constraint(expr <= contact_nodes[cn_i.id].var))
 
 
-class MaxProvidersConstraint(pk.constraint_list, GSOptConstraint):
+class MaxProvidersConstraint(pk.block, GSOptConstraint):
     """
     Constraint that enforces the number of ground station providers that can be selected is less than or equal to
     the given number.
     """
 
     def __init__(self, num_providers: int = 1, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         self.num_providers = num_providers
@@ -334,17 +374,17 @@ class MaxProvidersConstraint(pk.constraint_list, GSOptConstraint):
         Generate the constraint_list function.
         """
 
-        self.append(pk.constraint(sum(pn.var for pn in provider_nodes.values()) <= self.num_providers))
+        self.constraints.append(pk.constraint(sum(pn.var for pn in provider_nodes.values()) <= self.num_providers))
 
 
-class MinContactDurationConstraint(pk.constraint_list, GSOptConstraint):
+class MinContactDurationConstraint(pk.block, GSOptConstraint):
     """
     Constraint that enforces the minimum duration of a contact between a satellite and a ground station is greater than
     or equal to the given time period.
     """
 
     def __init__(self, min_duration: float = 300, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if min_duration <= 0:
@@ -360,10 +400,10 @@ class MinContactDurationConstraint(pk.constraint_list, GSOptConstraint):
         for cn in contact_nodes.values():
             if cn.model.t_duration <= self.min_duration:
                 # Force all contacts with duration less than the minimum to be zero
-                self.append(pk.constraint(cn.var == 0))
+                self.constraints.append(pk.constraint(cn.var == 0))
 
 
-class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
+class MaxContactsPerPeriodConstraint(pk.block, GSOptConstraint):
     """
     Constraint that enforces that the total number of contacts in any given period is less than or equal to the given
     limit. The usual period is a day.
@@ -375,7 +415,7 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
     """
 
     def __init__(self, value: int = 16, period: float = 86400.0, step: float = 300, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if period <= 0:
@@ -412,20 +452,20 @@ class MaxContactsPerPeriodConstraint(pk.constraint_list, GSOptConstraint):
             contacts_in_period = filter(lambda cn: cn.model.t_end >= ts and cn.model.t_start <= te, contacts)
 
             # Add the constraint
-            self.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts_in_period) <= self.value))
+            self.constraints.append(pk.constraint(sum(contact_nodes[cn.id].var for cn in contacts_in_period) <= self.value))
 
             # Move to the next period
             ts += self.step
             te += self.step
 
 
-class RequireProviderConstraint(pk.constraint_list, GSOptConstraint):
+class RequireProviderConstraint(pk.block, GSOptConstraint):
     """
     Constraint to require a specific provider to be selected.
     """
 
     def __init__(self, key: str = None, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         if key is None:
@@ -456,16 +496,16 @@ class RequireProviderConstraint(pk.constraint_list, GSOptConstraint):
         if self._matched_id is None:
             raise RuntimeError(f"Could not find a provider with key \"{self.key}\"")
 
-        self.append(pk.constraint(provider_nodes[self._matched_id].var == 1))
+        self.constraints.append(pk.constraint(provider_nodes[self._matched_id].var == 1))
 
 
-class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
+class RequireStationConstraint(pk.block, GSOptConstraint):
     """
     Constraint to require a specific station to be selected.
     """
 
     def __init__(self, id: str | None = None, name: str | None = None, provider: str | None = None, **kwargs):
-        pk.constraint_list.__init__(self)
+        pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
         self.required_id = None
@@ -495,7 +535,7 @@ class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
         # If and ID was provided, attempt to match it
         if self.required_id is not None:
             if self.required_id in station_nodes.keys():
-                self.append(pk.constraint(station_nodes[self.required_id].var == 1))
+                self.constraints.append(pk.constraint(station_nodes[self.required_id].var == 1))
                 return
             else:
                 raise RuntimeError(f"Could not find a station with id \"{self.required_id}\".")
@@ -503,7 +543,7 @@ class RequireStationConstraint(pk.constraint_list, GSOptConstraint):
         # Otherwise attempt to match the name and provider
         for sn in station_nodes.values():
             if sn.model.name.lower() == self.required_name.lower() and sn.model.provider.lower() == self.required_provider.lower():
-                self.append(pk.constraint(station_nodes[sn.id].var == 1))
+                self.constraints.append(pk.constraint(station_nodes[sn.id].var == 1))
                 return
 
         raise RuntimeError(f"Could not find a station with name \"{self.required_name}\" and provider \"{self.required_provider}\".")
