@@ -47,7 +47,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         self.optimizer = optimizer
 
         # Define MILP objective
-        self.obj = pk.objective()
+        self.obj_block = pk.block()
 
         # Variables
         self.provider_nodes = pk.block_dict()
@@ -97,15 +97,18 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             objective (pk.objective): Objective function to set
         """
 
-        if isinstance(objective, pk.objective):
-            # Hack to ensure no previous objective exists
-            if hasattr(self, "obj"):
-                del self.obj
+        if isinstance(objective, pk.block):
 
-            self.obj = objective
+            if hasattr(objective, 'obj_block'):
+                del self.obj_block
+
+            self.obj_block = objective
+
+        elif isinstance(objective, pk.objective):
+            raise ValueError("Objective must be a block type. Use a block with a member varible that is a pyomo.kernel.objective")
 
         else:
-            raise ValueError(f"Objective must be of type pk.objective. Unsupported type: {type(objective)}")
+            raise ValueError(f"Objective must be of type pk.block. Unsupported type: {type(objective)}")
 
         self._objective_set = True
 
@@ -192,6 +195,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             station_nodes=self.station_nodes,
             contact_nodes=self.contact_nodes,
             satellite_nodes=self.satellite_nodes,
+            station_satellite_nodes=self.station_satellite_nodes,
             opt_window=self.opt_window
         )
 
@@ -209,7 +213,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         # Generate objective function
         # We do this after the constraints since some objectives (MinMaxContactGapObjective) require additional
         # constraints to be generated, and it's nicer for debugging if all user-specified constraints are generated first
-        self.obj._generate_objective(**inputs)
+        self.obj_block._generate_objective(**inputs)
 
         # Generate minimum variable constraints
         # This must be done after the constraints are generated for the model
@@ -329,7 +333,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("Setup Time", str(utils.get_time_string(self.problem_setup_time)))
         tbl.add_row("Solver Status", str(self.solver_status).upper())
         tbl.add_row("Solve Time", utils.get_time_string(self.solve_time))
-        tbl.add_row("Objective Value", str(self.obj()))
+        tbl.add_row("Objective Value", str(self.obj_block.obj()))
         tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))
         for provider in self.provider_nodes.values():
             tbl.add_row(f" - {provider.model.name}", str(provider.var()))

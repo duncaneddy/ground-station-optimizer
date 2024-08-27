@@ -45,7 +45,7 @@ class OptimizationWindow():
         Returns:
             - float: Duration of the simulation window in seconds
         """
-        return (self.sim_end - self.sim_start).total_seconds()
+        return self.sim_end - self.sim_start
 
     @property
     def opt_duration(self):
@@ -55,7 +55,7 @@ class OptimizationWindow():
         Returns:
             - float: Duration of the optimization window in seconds
         """
-        return (self.opt_end - self.opt_start).total_seconds()
+        return self.opt_end - self.opt_start
 
 class GroundStation():
 

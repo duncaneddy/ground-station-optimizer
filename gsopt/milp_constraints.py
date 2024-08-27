@@ -218,12 +218,11 @@ class MaxOperationalCostConstraint(pk.block, GSOptConstraint):
 
         # Add contact costs
         for cn in contact_nodes.values():
-            # TODO: Need to weight this by the simulation time period to get monthly cost
-            expr += (cn.model.cost_per_minute * cn.model.t_duration + cn.model.cost_per_pass) * contact_nodes[cn.id].var
+            # The weight here converts the pass costs over the simulation window to an approximate monthly cost
+            expr += (86400.0 * 365.25) / (12 * opt_window.sim_duration) * (cn.model.cost_per_minute * cn.model.t_duration + cn.model.cost_per_pass) * contact_nodes[cn.id].var
 
         # Add constraint cost
         self.constraints.append(pk.constraint(expr <= self.value))
-
 
 
 class MaxAntennaUsageConstraint(pk.block, GSOptConstraint):
