@@ -52,6 +52,22 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         for station in provider.stations:
             self.stations[station.id] = station
 
+    @classmethod
+    def from_scenario(cls, scenario):
+        """
+        Create a GroundStationOptimizer from a ScenarioGenerator object.
+        """
+        opt_window = scenario.opt_window
+        optimizer = cls(opt_window)
+
+        for sat in scenario.satellites:
+            optimizer.add_satellite(sat)
+
+        for provider in scenario.providers:
+            optimizer.add_provider(provider)
+
+        return optimizer
+
     @property
     def provider_ids(self):
         return list(self.providers.keys())

@@ -1,14 +1,22 @@
 #!/usr/bin/env python
 """
-This example demonstrates the basic usage of the gsopt library to perform a MILP optimization for a ground station
-provider. The example walks through the major steps of the problem: data loading, contact computation, optimization,
-and results display.
+This script demonstrates how to use the GroundStationOptimizer class to define and solve a ground station selection
+and optimization problem.
+
+This example attempts to demonstrate the full capabilities of the library. It works through the following steps:
+- Load ground station data from GeoJSON files
+- Define a satellites to optimize for
+- Define an optimization window
+- Create a MILP optimizer
+- Set the optimization objective
+- Add problem constraints
+- Solve the optimization problem
+- Display the results
 """
 import datetime
 import os
 import random
 import logging
-from itertools import groupby
 from pathlib import Path
 from rich.console import Console
 
@@ -136,6 +144,7 @@ optimizer.compute_contacts()
 
 # Setup the optimization problem
 
+# These are the available objectives that can be set on the optimizer. Only one objective can be set at a time.
 optimizer.set_objective(
     # MinCostObjective()
     # MaxDataDownlinkObjective()
@@ -143,6 +152,7 @@ optimizer.set_objective(
 )
 
 # Add Constraints
+# This is the full set of constraints that can be added to the optimizer. Uncomment the ones you want to use.
 optimizer.add_constraints([
     MaxProvidersConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
@@ -150,7 +160,7 @@ optimizer.add_constraints([
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     MaxOperationalCostConstraint(value=800000),
-    MaxAntennaUsageConstraint(), # TODO: This needs to be tested in a case with a tight constraint
+    MaxAntennaUsageConstraint(),
     SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(value=60.0*90),
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
@@ -164,12 +174,3 @@ optimizer.solve()
 # Display the results
 
 console.print(optimizer)
-
-# print(optimizer.constraints[2][0].expr)
-# print(len(optimizer.constraints[3]))
-# for i in range(2, len(optimizer.constraints)):
-#     # print(optimizer.constraints[i].num_providers)
-#     print(optimizer.constraints[i].expr)
-
-# print(list(sorted(optimizer.contact_nodes.values(), key=lambda x: x.model.t_start))[0].model.t_duration)
-# print(list(sorted(optimizer.contact_nodes.values(), key=lambda x: x.model.t_start))[0].model.datarate)

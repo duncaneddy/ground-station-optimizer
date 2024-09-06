@@ -474,7 +474,7 @@ class Satellite():
         tbl.add_column("Value")
 
         tbl.add_row("Name", self.name)
-        tbl.add_row("Id", self.id)
+        tbl.add_row("Id", str(self.id))
         tbl.add_row("Satcat ID", self.satcat_id)
         tbl.add_row("Semi-Major Axis [km]", f"{self.tle.a/1e3:.3f}")
         tbl.add_row("Eccentricity", f"{self.tle.e:.3f}")

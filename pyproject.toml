@@ -24,8 +24,20 @@ dependencies = [
     "iudex>=0.12.0,<1.0.0",
 ]
 
+# Add dev dependencies
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
 [project.urls]
 Homepage = "https://github.com/sisl/ground-station-optimizer"
 
 [tool.setuptools]
 packages = ["gsopt"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore" # This ignores the pydantic PydanticDeprecatedSince20 warning. A more precise filter would be better.
+]

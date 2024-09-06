@@ -99,8 +99,8 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         if isinstance(objective, pk.block):
 
-            if hasattr(objective, 'obj_block'):
-                del self.obj_block
+            # Always remove the old objective block
+            del self.obj_block
 
             self.obj_block = objective
 
@@ -120,13 +120,16 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             constraint (pk.constraints): Constraint to add to the model
         """
 
+        if isinstance(constraint, list) and len(constraint) != 1:
+            raise ValueError("Input constraint must be a single constraint, not a list of constraints")
+
         if isinstance(constraint, pk.block):
             self.constraint_blocks.append(constraint)
 
         elif isinstance(constraint, (pk.constraint, pk.constraint_list, pk.constraint_dict)):
             self.constraints.append(constraint)
         else:
-            raise ValueError(f"Constraint must be of type pk.constraint, pk.constraint_list, or pk.constraint_dict")
+            raise ValueError(f"Constraint {type(constraint).__name__} is not of type pk.constraint, pk.constraint_list, or pk.constraint_dict")
 
     def add_constraints(self, constraints: list):
         """
@@ -143,6 +146,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         """
         Create the nodes for the MILP model
         """
+
 
         # Generate provider nodes
         for id, provider in self.providers.items():
@@ -276,12 +280,13 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
     def solve(self):
 
-        ts = time.perf_counter()
-
         # Initialize problem
         if not self._problem_initialized:
             self.generate_problem()
             self._problem_initialized = True
+
+        logger.info("Solving MILP problem...")
+        ts = time.perf_counter()
 
         # Select solver
         if self.optimizer == OptimizerType.Gurobi:
@@ -303,6 +308,8 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         te = time.perf_counter()
         self.solve_time = te - ts
+
+        logger.info(f"Solved MILP problem in {utils.get_time_string(self.solve_time)} with status: {self.solver_status}")
 
 
     def write_solution(self):
