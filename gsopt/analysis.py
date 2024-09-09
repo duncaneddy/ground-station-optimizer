@@ -9,7 +9,7 @@ from itertools import groupby
 
 from brahe import Epoch
 
-from gsopt.models import GroundStationProvider, Satellite, Contact, GroundStation, OptimizationWindow
+from gsopt.models import GroundStationProvider, Satellite, Contact, GroundStation, OptimizationWindow, DataUnits
 from gsopt.plots import plot_stations
 
 import matplotlib.pyplot as plt
@@ -31,6 +31,8 @@ class SolutionContact:
     t_duration: float
 
     cost: float
+    cost_per_minute: float
+    cost_per_pass: float
     datavolume: float
 
     def __post_init__(self):
@@ -47,6 +49,7 @@ class Solution:
     Dataclass to store information about an optimization solution
     """
 
+    runtime: dict[str, float]
     opt_window: OptimizationWindow
     satellite_dict: dict[str, Satellite]
     provider_dict: dict[str, GroundStationProvider]
@@ -54,6 +57,7 @@ class Solution:
     contact_dict: dict[str, SolutionContact]
     selected_provider_dict: dict[str, GroundStationProvider]
     selected_station_dict: dict[str, GroundStation]
+    stattions_by_satellite: dict[str: list[str]]
 
     @property
     def satellites(self):
@@ -94,6 +98,8 @@ def load_solution(filepath: str):
     # Parse Optimization Window
     opt_window = OptimizationWindow(**data["optimization_window"])
 
+
+
     # Parse Providers
     providers = [GroundStationProvider.load_geojson(p) for p in data["providers"]]
 
@@ -115,7 +121,12 @@ def load_solution(filepath: str):
     selected_station_ids = set([c.station_id for c in contact_dict.values()])
     selected_station_dict = {s_id:station_dict[s_id] for s_id in selected_station_ids}
 
-    return Solution(opt_window, satellite_dict, provider_dict, station_dict, contact_dict, selected_provider_dict, selected_station_dict)
+    # Extract stations by satellite
+    stations_by_satellite = data['stations_by_satellite']
+
+    return Solution(data['runtime'], opt_window, satellite_dict, provider_dict,
+                    station_dict, contact_dict, selected_provider_dict,
+                    selected_station_dict, stations_by_satellite)
 
 def plot_solution_stations(solution: Solution, selected_only: bool = False):
     """
@@ -170,7 +181,7 @@ def compute_contact_gaps(contacts: list[Contact] | list[SolutionContact]):
                 'satellite_id': sorted_contacts[i].satellite_id,
                 'gap_start': sorted_contacts[i-1].t_end,
                 'gap_end': sorted_contacts[i].t_start,
-                'gap_duration': gap,
+                'gap_duration_s': gap,
                 'contact_before_id': sorted_contacts[i-1].id,
                 'contact_after_id': sorted_contacts[i].id
             }
@@ -187,27 +198,27 @@ def compute_gap_statistics(contact_gaps: list[dict]):
     num_gaps = len(contact_gaps)
 
     # Compute the average gap duration
-    mean_gap_duration = sum([g['gap_duration'] for g in contact_gaps]) / num_gaps
+    mean_gap_duration = sum([g['gap_duration_s'] for g in contact_gaps]) / num_gaps
 
     # Compute the maximum gap duration
-    max_gap_duration = max([g['gap_duration'] for g in contact_gaps])
+    max_gap_duration = max([g['gap_duration_s'] for g in contact_gaps])
 
     # Compute the minimum gap duration
-    min_gap_duration = min([g['gap_duration'] for g in contact_gaps])
+    min_gap_duration = min([g['gap_duration_s'] for g in contact_gaps])
 
     # Compute 5 and 95 percentiles
-    sorted_gap_durations = sorted([g['gap_duration'] for g in contact_gaps])
-    gap_duration_p5bins = statistics.quantiles(sorted_gap_durations, n=20)
-    gap_duration_p05 = gap_duration_p5bins[0]
-    gap_duration_p95 = gap_duration_p5bins[18]
+    sorted_gap_durations = sorted([g['gap_duration_s'] for g in contact_gaps])
+    gap_duration_s_p5bins = statistics.quantiles(sorted_gap_durations, n=20)
+    gap_duration_s_p05 = gap_duration_s_p5bins[0]
+    gap_duration_s_p95 = gap_duration_s_p5bins[18]
 
     return {
         'num_gaps': num_gaps,
-        'mean_gap_duration': mean_gap_duration,
-        'max_gap_duration': max_gap_duration,
-        'min_gap_duration': min_gap_duration,
-        'gap_duration_p05': gap_duration_p05,
-        'gap_duration_p95': gap_duration_p95
+        'mean_gap_duration_s': mean_gap_duration,
+        'max_gap_duration_s': max_gap_duration,
+        'min_gap_duration_s': min_gap_duration,
+        'gap_duration_s_p05': gap_duration_s_p05,
+        'gap_duration_s_p95': gap_duration_s_p95
     }
 
 def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
@@ -226,9 +237,9 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
 
     # Compute 5 and 95 percentiles
     sorted_durations = sorted([c.t_duration for c in contacts])
-    contact_duration_p5bins = statistics.quantiles(sorted_durations, n=20)
-    contact_duration_p05 = contact_duration_p5bins[0]
-    contact_duration_p95 = contact_duration_p5bins[18]
+    contact_duration_s_p5bins = statistics.quantiles(sorted_durations, n=20)
+    contact_duration_s_p05 = contact_duration_s_p5bins[0]
+    contact_duration_s_p95 = contact_duration_s_p5bins[18]
 
     sat_contact_stats = {}
     sat_gap_stats = {}
@@ -240,17 +251,17 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
         sat_max_duration = max([c.t_duration for c in sat_contacts])
         sat_min_duration = min([c.t_duration for c in sat_contacts])
         sat_sorted_durations = sorted([c.t_duration for c in sat_contacts])
-        sat_duration_p5bins = statistics.quantiles(sat_sorted_durations, n=20)
-        sat_duration_p05 = sat_duration_p5bins[0]
-        sat_duration_p95 = sat_duration_p5bins[18]
+        sat_duration_s_p5bins = statistics.quantiles(sat_sorted_durations, n=20)
+        sat_duration_s_p05 = sat_duration_s_p5bins[0]
+        sat_duration_s_p95 = sat_duration_s_p5bins[18]
 
         sat_contact_stats[sat_id] = {
             'num_contacts': len(sat_contacts),
-            'mean_duration': sat_mean_duration,
-            'max_duration': sat_max_duration,
-            'min_duration': sat_min_duration,
-            'duration_p05': sat_duration_p05,
-            'duration_p95': sat_duration_p95
+            'mean_duration_s': sat_mean_duration,
+            'max_duration_s': sat_max_duration,
+            'min_duration_s': sat_min_duration,
+            'duration_s_p05': sat_duration_s_p05,
+            'duration_s_p95': sat_duration_s_p95
         }
 
         # Compute contact gaps
@@ -259,11 +270,11 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
 
     return {
         'num_contacts': num_contacts,
-        'mean_duration': mean_duration,
-        'max_duration': max_duration,
-        'min_duration': min_duration,
-        'duration_p05': contact_duration_p05,
-        'duration_p95': contact_duration_p95,
+        'mean_duration_s': mean_duration,
+        'max_duration_s': max_duration,
+        'min_duration_s': min_duration,
+        'duration_s_p05': contact_duration_s_p05,
+        'duration_s_p95': contact_duration_s_p95,
         'satellite_contact_stats': sat_contact_stats
     }
 
@@ -308,7 +319,7 @@ def plot_contact_gap_histogram(contact_gaps, satellite_id: str | None = None, un
     else:
         contact_gaps = contact_gaps['all']
 
-    gap_durations = [g['gap_duration'] for g in contact_gaps]
+    gap_durations = [g['gap_duration_s'] for g in contact_gaps]
 
     # Change duration into minutes for better visualization
     if units == 'minutes':
@@ -337,7 +348,7 @@ def plot_contact_gap_histogram(contact_gaps, satellite_id: str | None = None, un
 
     return fig
 
-def analyze_solution(solution: Solution):
+def analyze_solution(solution: Solution, data_unit: DataUnits = DataUnits.b):
     """
     Analyze an optimization solution and return statistics about the contacts and gaps in the solution.
 
@@ -379,31 +390,43 @@ def analyze_solution(solution: Solution):
         total_operational_cost += extr_opt_cost
         monthly_operational_cost += sn.monthly_cost
 
-        # Add satellite licensing costs for the station
-
-
-        # Add satellite licensing costs for the station
-        for key in filter(lambda x: x[0] == sn.id, solution.contact_dict.keys()):
-            total_operational_cost += sn.per_satellite_license_cost
-
+    ## Add Satellite Licensing Costs
+    for sat_id in solution.stattions_by_satellite.keys():
+        for station_id in solution.stattions_by_satellite[sat_id]:
+            total_cost += solution.station_dict[station_id].per_satellite_license_cost
 
     ## Contact Costs - Operational
+    for cn_id, cn in solution.contact_dict.items():
+        total_cost += solution.opt_window.T_opt / solution.opt_window.T_sim * cn.cost
+        total_operational_cost += solution.opt_window.T_opt / solution.opt_window.T_sim * cn.cost
+        monthly_operational_cost += cn.cost / solution.opt_window.T_sim * (365.25 * 86400.0) / 12.0
 
+    # Data Downlink Statistics
+    total_data_downlinked = sum([c.datavolume for c in solution.contacts]) * solution.opt_window.T_opt / solution.opt_window.T_sim
+    total_data_downlinked = total_data_downlinked / data_unit.value
 
+    datavolume_by_satellite = {
+        'total': {},
+        'daily_avg': {},
+    }
 
-    # Compute Total Data Downlinked
-
-    # Over Mission
-
-    # Daily
-
-    # Compute Per-Satellite Data Downlinked
-
-    # Over Mission
-
-    # Daily
+    for sat_id, sat_contacts in groupby(solution.contacts, lambda c: c.satellite_id):
+        datavolume_by_satellite['total'][sat_id] = sum([c.datavolume for c in sat_contacts]) * solution.opt_window.T_opt / solution.opt_window.T_sim / data_unit.value
+        datavolume_by_satellite['daily_avg'][sat_id] = datavolume_by_satellite['total'][sat_id] / (solution.opt_window.T_opt / 86400.0)
 
     return {
+        'runtime': {
+        },
         'contact_stats': contact_stats,
         'gap_stats': gap_stats,
+        'costs': {
+            'total_cost': total_cost,
+            'total_fixed_cost': total_fixed_cost,
+            'total_operational_cost': total_operational_cost,
+            'monthly_operational_cost': monthly_operational_cost
+        },
+        'data_downlink': {
+            'total_data_downlinked': total_data_downlinked,
+            'datavolume_by_satellite': datavolume_by_satellite
+        }
     }

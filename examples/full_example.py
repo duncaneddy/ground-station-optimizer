@@ -46,7 +46,7 @@ providers = [] # List of all different station providers to analyze
 for provider_file in os.listdir(STATION_DATA_DIR):
     with open(STATION_DATA_DIR / provider_file, 'r') as f:
         # Load stations from file and add to existing provider
-        providers.append(GroundStationProvider.load_geojson(f))
+        providers.append(GroundStationProvider.load_geojson_file(f))
 
 # Display Station provider
 for sta_provider in providers:
@@ -160,7 +160,8 @@ optimizer.add_constraints([
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     MaxOperationalCostConstraint(value=800000),
-    MaxAntennaUsageConstraint(),
+    # MaxAntennaUsageConstraint(),
+    StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(value=60.0*90),
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
@@ -174,3 +175,6 @@ optimizer.solve()
 # Display the results
 
 console.print(optimizer)
+
+# Save results
+optimizer.write_solution('full_example.json')

@@ -330,9 +330,11 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         solution = {}
 
         # Compute statistics
-        solution['contact_compute_time'] = self.contact_compute_time
-        solution['problem_setup_time'] = self.problem_setup_time
-        solution['solve_time'] = self.solve_time
+        solution['runtime'] = {
+            'contact_compute_time': self.contact_compute_time,
+            'problem_setup_time': self.problem_setup_time,
+            'solve_time': self.solve_time,
+        }
 
         # Solution Output
         solution['solver_status'] = self.solver_status.upper()

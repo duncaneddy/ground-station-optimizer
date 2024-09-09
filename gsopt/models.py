@@ -1,3 +1,4 @@
+import enum
 import uuid
 import json
 import logging
@@ -9,6 +10,28 @@ from brahe import TLE, tle_string_from_elements, mean_motion, Epoch, sun_sync_in
 import brahe.data_models as bdm
 
 logger = logging.getLogger(__name__)
+
+class DataUnits(enum.Enum):
+    b = 1
+    bits = b
+    B = 8
+    bytes = B
+    Kb = 1e3
+    kilobits = Kb
+    KB = 8 * 1e3
+    kilobytes = KB
+    Mb = 1e6
+    megabits = Mb
+    MB = 8 * 1e6
+    megabytes = MB
+    Gb = 1e9
+    gigabits = Gb
+    GB = 8 * 1e9
+    gigabytes = GB
+    Tb = 1e12
+    terabits = Tb
+    TB = 8 * 1e12
+    terabytes = TB
 
 
 class OptimizationWindow():
@@ -598,6 +621,8 @@ class Contact():
                 't_end': self.t_end.isoformat(),
                 't_duration': self.t_duration,
                 'cost': self.cost,
+                'cost_per_minute': self.cost_per_minute,
+                'cost_per_pass': self.cost_per_pass,
                 'datavolume': self.data_volume
             }
         else:
