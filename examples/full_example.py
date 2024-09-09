@@ -22,6 +22,7 @@ from rich.console import Console
 
 import brahe as bh
 
+from gsopt.ephemeris import satellite_from_satcat_id, satellites_from_constellation
 from gsopt.milp_constraints import *
 from gsopt.milp_objectives import *
 from gsopt.models import Satellite, GroundStation, GroundStationProvider, OptimizationWindow
@@ -46,7 +47,7 @@ providers = [] # List of all different station providers to analyze
 for provider_file in os.listdir(STATION_DATA_DIR):
     with open(STATION_DATA_DIR / provider_file, 'r') as f:
         # Load stations from file and add to existing provider
-        providers.append(GroundStationProvider.load_geojson(f))
+        providers.append(GroundStationProvider.load_geojson_file(f))
 
 # Display Station provider
 for sta_provider in providers:
@@ -92,19 +93,10 @@ epc = bh.Epoch(2022, 1, 1, 0, 0, 0)
 
 # Define approximate satellite orbit based on ISS
 satellites = [
-    Satellite.from_elements(
-        25544,
-        'ISS',
-        epc,
-        bh.R_EARTH + 420e3,  # 420 km altitude
-        0.0005296,
-        51.64,
-        0.0,
-        0.0,
-        0.0,
-        datarate=1.2e9  # 1.2 Gbps
-    ),
+    satellite_from_satcat_id(25544, datarate=1.2e9)
 ]
+
+# satellites = satellites_from_constellation('CAPELLA', datarate=1.2e9)
 
 # Define the optimization window
 
@@ -160,9 +152,11 @@ optimizer.add_constraints([
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
     MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
     MaxOperationalCostConstraint(value=800000),
-    MaxAntennaUsageConstraint(),
+    # MaxAntennaUsageConstraint(), # This is more computationally expensive
+    StationContactExclusionConstraint(),
+    StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(),
-    # MaxContactGapConstraint(value=60.0*90),
+    # MaxContactGapConstraint(value=60.0*90), # This is redundant with the MinMaxContactGapObjective
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
     RequireProviderConstraint('Viasat'),
     RequireStationConstraint(name='Oregon', provider='Aws')
@@ -174,3 +168,6 @@ optimizer.solve()
 # Display the results
 
 console.print(optimizer)
+
+# Save the solution to a file for further analysis
+optimizer.write_solution('full_example.json')

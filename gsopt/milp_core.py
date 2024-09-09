@@ -102,6 +102,18 @@ class ContactNode(BinaryNode):
         self.provider = kwargs['provider']
         self.satellite = kwargs['satellite']
 
+    @property
+    def duration(self):
+        return self.model.duration
+
+    @property
+    def t_start(self):
+        return self.model.t_start
+
+    @property
+    def t_end(self):
+        return self.model.t_end
+
     def dict(self):
         d = super().dict()
 

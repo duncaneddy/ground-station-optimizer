@@ -1,7 +1,9 @@
 '''
 This module contains the GSOptimizer class, which is used to solve the ground station optimization problem.
 '''
+import json
 import logging
+import os
 import time
 import copy
 from enum import Enum
@@ -250,7 +252,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             self.n_constraints += 1
 
             # If a single contact for a given satellite is selected then that satellite-station indicator must be selected
-            contacts_by_satellite_sorted = sorted(contact_node_group, key=lambda x: x.satellite.id)
+            contacts_by_satellite_sorted = sorted(contact_node_group, key=lambda x: str(x.satellite.id))
             for sat_id, sat_contacts in groupby(contacts_by_satellite_sorted, key=lambda x: x.satellite.id):
                 sat_contact_group = list(sat_contacts)
                 num_sat_contacts = len(sat_contact_group)
@@ -312,8 +314,78 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         logger.info(f"Solved MILP problem in {utils.get_time_string(self.solve_time)} with status: {self.solver_status}")
 
 
-    def write_solution(self):
-        pass
+    def get_solution(self):
+        """
+        Get the solution from the MILP solver
+
+        Returns:
+            - Solver status
+            - Compute time
+            - Objective value
+            - Provider selection
+            - Station selection
+            - Contact selection
+        """
+
+        solution = {}
+
+        # Compute statistics
+        solution['contact_compute_time'] = self.contact_compute_time
+        solution['problem_setup_time'] = self.problem_setup_time
+        solution['solve_time'] = self.solve_time
+
+        # Solution Output
+        solution['solver_status'] = self.solver_status.upper()
+
+        # Objective value
+        solution['objective_value'] = self.obj_block.obj()
+
+        # Solution Metadata
+        solution['n_vars'] = self.n_vars
+        solution['n_constraints'] = self.n_constraints
+
+        solution['statistics'] = {}
+
+        # Optimization Window
+        solution['optimization_window'] = self.opt_window.as_dict()
+
+        # Satellites
+        solution['satellites'] = [sn.model.as_dict() for sn in self.satellite_nodes.values()]
+
+        # Variable selection
+        solution['providers'] = [pn.model.as_dict() for pn in self.provider_nodes.values()]
+        solution['selected_providers'] = [pn.model.name for pn in self.provider_nodes.values() if pn.var() > 0]
+        solution['selected_stations'] = [{'name': sn.model.name, 'provider': sn.model.provider} for sn in self.station_nodes.values() if sn.var() > 0]
+        solution['contacts'] = [cn.model.as_dict(minimal=True) for cn in sorted(self.contact_nodes.values(), key=lambda c: c.model.t_start) if cn.var() > 0]
+
+        # Add station-satellite indicators
+        solution['station_satellite_indicators'] = {}
+
+        for sat_id, sat in self.satellites.items():
+            solution['stations_by_satellite'][sat_id] = []
+            for gs_id, gs in self.stations.items():
+                if self.station_satellite_nodes[(gs_id, sat_id)]() > 0:
+                    solution['stations_by_satellite'][sat_id].append(gs_id)
+
+        return solution
+
+    def write_solution(self, filename: str):
+        """
+        Write the solution to a file
+
+        Args:
+            filename (str): Filename to write the solution to
+        """
+
+        # Confirm problem has been solved
+        if self.solver_status == 'Not Solved':
+            raise RuntimeError("Problem has not been solved. Please solve the problem before writing the solution.")
+
+        # Confirm filename is a JSON file
+        if not filename.endswith('.json'):
+            raise ValueError("Filename must be a JSON file (e.g. 'single_sat_solution.json')")
+
+        json.dump(self.get_solution(), open(filename, 'w'), indent=4)
 
     def __str__(self):
         return f"<MilpOptimizer - {self.solver_status}: {len(self.satellites)} satellites, {len(self.providers)} providers, {len(self.stations)} stations, {len(self.contacts)} contacts>"
@@ -325,6 +397,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_column("Property")
         tbl.add_column("Value")
 
+        tbl.add_row("Optimization Objective", self.obj_block.__class__.__name__)
         tbl.add_row("Contact Compute Time", utils.get_time_string(self.contact_compute_time))
         tbl.add_row("# of Satellites", str(len(self.satellites)))
         tbl.add_row("# of Providers", str(len(self.providers)))
@@ -353,22 +426,5 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
                 tbl.add_row(f" - {s.provider.name}-{s.model.name}", str(s.var()))
 
         tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
-
-        # tbl.add_row("Visible Sats By Station", "")
-        #
-        # sats_by_station = { k: 0 for k in self.station_ids }
-        #
-        # for sta in sats_by_station.keys():
-        #     for k, v in self.station_satellite_nodes.items():
-        #         if k[0] == sta:
-        #             sats_by_station[sta] += v()
-        #
-        # # Ensure display is in consistent alphabetical order
-        # l = {}
-        # for sta in self.stations.values():
-        #     l[(sta.provider, sta.name)] = f"- {sta.provider} - {sta.name}", str(sats_by_station[sta.id])
-        #
-        # for k in sorted(l.keys()):
-        #     tbl.add_row(l[k][0], l[k][1])
 
         yield tbl

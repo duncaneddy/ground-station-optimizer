@@ -8,6 +8,9 @@ import pathlib
 import time
 import datetime
 import warnings
+import time
+import logging
+from functools import wraps
 
 import polars as pl
 import multiprocessing as mp
@@ -27,6 +30,14 @@ from gsopt.models import Satellite, GroundStation, Contact
 # change asc time to
 LOG_FORMAT_VERBOSE = '%(asctime)s.%(msecs)03d:%(levelname)8s [%(filename)20s:%(lineno)4d] %(message)s'
 LOG_DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+logging.basicConfig(
+    datefmt=LOG_DATE_FORMAT,
+    format=LOG_FORMAT_VERBOSE,
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
+
 
 APPLIED_FILTER_WARNINGS = False
 def filter_warnings():
@@ -111,3 +122,28 @@ def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]
         ))
 
     return stations
+
+
+def time_milp_generation(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        # Print the class name and method name at the start
+        class_name = self.__class__.__name__
+        logger.info(f"Starting generation of {class_name}...")
+
+        # Start timing
+        start_time = time.time()
+
+        # Execute the original function
+        result = func(self, *args, **kwargs)
+
+        # End timing
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        # Print the time it took to execute
+        logger.info(f"Finished generating {class_name} in {get_time_string(elapsed_time)}.")
+
+        return result
+
+    return wrapper

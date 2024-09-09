@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 # Define the optimization window
-opt_start = datetime.datetime(2022, 1, 1, 0, 0, 0)
+opt_start = datetime.datetime.utcnow()
 opt_end = opt_start + datetime.timedelta(days=365)
 
 # The simulation window is the duration over which we want to simulate contacts.
@@ -75,8 +75,8 @@ optimizer.set_objective(
 optimizer.add_constraints([
     MaxProvidersConstraint(num_providers=3), # At most 3 providers
     MinContactDurationConstraint(min_duration=180.0), # Minimum 3 minute contact duration
-    MaxOperationalCostConstraint(value=500000),
-    MaxAntennaUsageConstraint(),
+    MaxOperationalCostConstraint(value=1e9),
+    StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(), # This constraint should always be added to avoid self-interference
 ])
 

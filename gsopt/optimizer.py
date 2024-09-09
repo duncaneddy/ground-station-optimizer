@@ -125,6 +125,12 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         self.contact_compute_time = te - ts
         logger.info(f"Contacts computed successfully. Found {len(self.contacts)} contacts. Took {utils.get_time_string(self.contact_compute_time)}.")
 
+    def contact_list(self):
+        """
+        Return a list of contacts.
+        """
+        return list(self.contacts.values())
+
     @abstractmethod
     def solve(self):
         pass

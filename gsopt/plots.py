@@ -41,6 +41,10 @@ def plot_stations(stations: list[tuple[float, float, str]], elevation_min:float=
     ax.set_global()
     ax.stock_img()
 
+    # Hide the axes
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
     for station in stations:
         lon, lat = station[0], station[1]
 

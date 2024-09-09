@@ -320,14 +320,14 @@ class ScenarioGenerator():
 
         self.satellites.extend(satellites_from_dataframe(constellation_sats))
 
-    def add_satellite(self, sat_id: str):
+    def add_satellite(self, sat_id: str | int):
         """
         Add a specific satellite to the scenario generator
 
         Args:
             sat_id: str: NORAD ID of the satellite to add
         """
-        sat = self._satcat_df.filter(pl.col('satcat_id') == sat_id)
+        sat = self._satcat_df.filter(pl.col('satcat_id') == str(sat_id))
         self.satellites.extend(satellites_from_dataframe(sat))
 
     def add_random_satellites(self, num_satellites: int, alt_range: tuple = (300, 1000)):

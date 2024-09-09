@@ -9,6 +9,7 @@ import pyomo.kernel as pk
 
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode
 from gsopt.models import OptimizationWindow
+from gsopt.utils import time_milp_generation
 
 
 class GSOptObjective(metaclass=ABCMeta):
@@ -41,6 +42,7 @@ class MinCostObjective(pk.block, GSOptObjective):
         # Set objective direction
         self.obj.sense = pk.minimize
 
+    @time_milp_generation
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,
                             contact_nodes: dict[str, ContactNode] | None = None,
@@ -52,7 +54,7 @@ class MinCostObjective(pk.block, GSOptObjective):
 
         # Add provider costs
         for pn_id, pn in provider_nodes.items():
-            self.obj.expr += pn.model.integrator_cost * provider_nodes[pn_id].var
+            self.obj.expr += pn.model.integration_cost * provider_nodes[pn_id].var
 
         # Add station costs
         for sn_id, sn in station_nodes.items():
@@ -63,11 +65,11 @@ class MinCostObjective(pk.block, GSOptObjective):
 
             # Add satellite licensing costs for the station
             for key in filter(lambda x: x[0] == sn_id, station_satellite_nodes.keys()):
-                self.obj.expr += sn.model.license_cost * station_satellite_nodes[key]
+                self.obj.expr += sn.model.per_satellite_license_cost * station_satellite_nodes[key]
 
         # Add contact costs
         for cn_id, cn in contact_nodes.items():
-            self.obj.expr += opt_window.T_opt / opt_window.T_sim (cn.model.t_duration * cn.model.cost_per_minute + cn.model.cost_per_pass) * contact_nodes[cn_id].var
+            self.obj.expr += opt_window.T_opt / opt_window.T_sim * (cn.model.t_duration * cn.model.cost_per_minute + cn.model.cost_per_pass) * contact_nodes[cn_id].var
 
 
 class MaxDataDownlinkObjective(pk.block, GSOptObjective):
@@ -83,6 +85,7 @@ class MaxDataDownlinkObjective(pk.block, GSOptObjective):
         # Set objective direction
         self.obj.sense = pk.maximize
 
+    @time_milp_generation
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,
                             contact_nodes: dict[str, ContactNode] | None = None,
@@ -111,6 +114,7 @@ class MinMaxContactGapObjective(pk.block, GSOptObjective):
         # Initialize constraints required to implement the objective
         self.constraints = pk.constraint_list()
 
+    @time_milp_generation
     def _generate_objective(self, provider_nodes: dict[str, ProviderNode] | None = None,
                             station_nodes: dict[str, StationNode] | None = None,
                             contact_nodes: dict[str, ContactNode] | None = None,
@@ -125,7 +129,7 @@ class MinMaxContactGapObjective(pk.block, GSOptObjective):
         self.variable_dict = pk.variable_dict()
 
         # Create auxiliary variable for the max gap across all satellites and contacts
-        self.variable_dict['max_gap'] = pk.variable(value=0, domain=pk.NonNegativeReals)
+        self.variable_dict['max_gap'] = pk.variable(value=0.0, domain=pk.NonNegativeReals)
 
         # Set objective to minimize the maximum gap
         self.obj.expr = self.variable_dict['max_gap']
@@ -140,7 +144,7 @@ class MinMaxContactGapObjective(pk.block, GSOptObjective):
                 # Working expression for the next scheduled contact
                 expr = pk.expression(0)
 
-                for j, cn_j in enumerate(sat_contacts[i + 1:]):
+                for j, cn_j in enumerate(filter(lambda cn: cn.model.t_start > cn_i.model.t_end, sat_contacts)):
                     # Auxiliary variable if contact j is the next scheduled after contact i
                     self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] = pk.variable(value=0, domain=pk.Binary)
 

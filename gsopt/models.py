@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
-from brahe import TLE, tle_string_from_elements, mean_motion, Epoch, sun_sync_inclination
+from brahe import TLE, tle_string_from_elements, mean_motion, Epoch, sun_sync_inclination, R_EARTH
 import brahe.data_models as bdm
 
 logger = logging.getLogger(__name__)
@@ -13,26 +13,26 @@ logger = logging.getLogger(__name__)
 
 class OptimizationWindow():
 
-    def __init__(self, opt_start: datetime, opt_end: datetime, sim_start: datetime, sim_end: datetime):
+    def __init__(self, opt_start: datetime | Epoch | str, opt_end: datetime | Epoch | str, sim_start: datetime | Epoch | str, sim_end: datetime | Epoch | str):
 
         if not opt_start or not opt_end:
             raise ValueError("Optimization window must have start and end times")
 
         if not sim_start or not sim_end:
             logger.debug("No simulation window provided. Using default 7-day simulation window")
-            sim_start = opt_start
-            sim_end = opt_start + timedelta(days=7)
+            sim_start = Epoch(opt_start)
+            sim_end = sim_start + 7 * 86400.0
+
+        self.opt_start = Epoch(opt_start)
+        self.opt_end = Epoch(opt_end)
+        self.sim_start = Epoch(sim_start)
+        self.sim_end = Epoch(sim_end)
 
         if opt_start > opt_end:
             raise ValueError("Optimization start time must be before optimization end time")
 
         if sim_start > sim_end:
             raise ValueError("Simulation start time must be before simulation end time")
-
-        self.opt_start = Epoch(opt_start)
-        self.opt_end = Epoch(opt_end)
-        self.sim_start = Epoch(sim_start)
-        self.sim_end = Epoch(sim_end)
 
         self.T_opt = self.opt_end - self.opt_start
         self.T_sim = self.sim_end - self.sim_start
@@ -56,6 +56,14 @@ class OptimizationWindow():
             - float: Duration of the optimization window in seconds
         """
         return self.opt_end - self.opt_start
+
+    def as_dict(self):
+        return {
+            'opt_start': self.opt_start.isoformat(),
+            'opt_end': self.opt_end.isoformat(),
+            'sim_start': self.sim_start.isoformat(),
+            'sim_end': self.sim_end.isoformat()
+        }
 
 class GroundStation():
 
@@ -131,6 +139,7 @@ class GroundStation():
             raise ValueError("Missing 'name' property")
 
         return cls(
+            id=properties['id'] if 'id' in properties else None,
             name=properties['name'],
             provider=properties['provider'],
             provider_id=properties['provider_id'] if 'provider_id' in properties else None,
@@ -182,6 +191,7 @@ class GroundStation():
                 "coordinates": [self.lon, self.lat, self.alt]
             },
             "properties": {
+                "id": self.id,
                 "name": self.name,
                 "provider": self.provider,
                 "elevation_min": self.elevation_min,
@@ -225,10 +235,10 @@ class GroundStationProvider():
     """
 
     def __init__(self, stations: list[GroundStation] | None = None,
-                 integration_cost: float = 0.0):
+                 integration_cost: float = 0.0, id: str | None = None):
 
         self.provider = None
-        self.id = str(uuid.uuid4())
+        self.id = id if id else str(uuid.uuid4())
 
         if not stations:
             self.stations = []
@@ -259,15 +269,13 @@ class GroundStationProvider():
         return self.provider
 
     @classmethod
-    def load_geojson(cls, f, integration_cost: float = 0.0):
+    def load_geojson(cls, data, integration_cost: float = 0.0):
         """
-        Load a GroundStationProvider from a GeoJSON file
+        Load a GroundStationProvider from a GeoJSON dictionary
 
         Args:
-            - f (file): The file to load. Should be a file-pointer to a GeoJSON file.
+            - data (dict): The GeoJSON dictionary to load
         """
-
-        data = json.load(f)
 
         if "type" not in data.keys():
             raise RuntimeError("File missing expected GeoJSON field \"type\"")
@@ -276,7 +284,18 @@ class GroundStationProvider():
 
             stations = [GroundStation.from_geojson(obj) for obj in data["features"]]
 
-            return cls(stations, integration_cost=integration_cost)
+            integration_cost = 0.0
+            id = None
+
+            if "properties" in data and "properties" in data:
+                if "integration_cost" in data["properties"]:
+                    integration_cost = data["properties"]["integration_cost"]
+
+                if "id" in data["properties"]:
+                    id = data["properties"]["id"]
+
+
+            return cls(stations, integration_cost=integration_cost, id=id)
 
         elif data["type"] == "Feature":
             station = GroundStation.from_geojson(data)
@@ -286,13 +305,31 @@ class GroundStationProvider():
         else:
             raise RuntimeError(f"Found unsupported GeoJSON type \"{data['type']}\"")
 
+    @classmethod
+    def load_geojson_file(cls, f, integration_cost: float = 0.0):
+        """
+        Load a GroundStationProvider from a GeoJSON file
+
+        Args:
+            - f (file): The file to load. Should be a file-pointer to a GeoJSON file.
+        """
+
+        data = json.load(f)
+
+        return cls.load_geojson(data, integration_cost=integration_cost)
+
     def as_brahe_model(self):
         return [sta.as_brahe_model() for sta in self.stations]
 
-    def as_geojson_dict(self):
+    def as_dict(self):
         return {
             "type": "FeatureCollection",
-            "features": [sta.as_geojson() for sta in self.stations]
+            "features": [sta.as_geojson() for sta in self.stations],
+            "properties": {
+                "provider": self.provider,
+                "id": self.id,
+                "integration_cost": self.integration_cost
+            }
         }
 
     def get(self, key: str) -> GroundStation | ValueError:
@@ -447,7 +484,7 @@ class Satellite():
             id=int(self.satcat_id),
             name=self.name,
             line1=self.tle_line1,
-            line2=self.tle_line2
+            line2=self.tle_line2,
         )
 
     def as_dict(self):
@@ -457,8 +494,15 @@ class Satellite():
         return {
             'satcat_id': self.satcat_id,
             'tle_line1': self.tle_line1,
-            'tle_line2': self.tle_line2
+            'tle_line2': self.tle_line2,
+            'name': self.name,
+            'id': self.id,
+            'datarate': self.datarate
         }
+
+    @property
+    def alt(self):
+        return self.tle.a - R_EARTH
 
     def __str__(self):
         return f"Satellite({self.satcat_id}, {self.name}, {self.tle.a:.3f} km, {self.tle.e:.3f}, {self.tle.i:.3f} deg, {self.tle.RAAN:.3f} deg, {self.tle.w:.3f} deg, {self.tle.M:.3f} deg, {self.datarate*1e-6:.3f} Mbps)"
@@ -476,7 +520,9 @@ class Satellite():
         tbl.add_row("Name", self.name)
         tbl.add_row("Id", str(self.id))
         tbl.add_row("Satcat ID", self.satcat_id)
+        tbl.add_row("Epoch", str(self.tle.epoch))
         tbl.add_row("Semi-Major Axis [km]", f"{self.tle.a/1e3:.3f}")
+        tbl.add_row("Altitude [km]", f"{(self.tle.a - R_EARTH)/1e3:.3f}")
         tbl.add_row("Eccentricity", f"{self.tle.e:.3f}")
         tbl.add_row("Inclination [deg]", f"{self.tle.i:.3f}")
         tbl.add_row("RAAN [deg]", f"{self.tle.RAAN:.3f}")
@@ -496,6 +542,7 @@ class Contact():
 
         # Set Station Values
         self.station_id = station.id
+        self.station_name = station.name
         self.provider_id = station.provider_id
         self.provider = station.provider
         self.longitude = station.lon
@@ -523,6 +570,10 @@ class Contact():
         self.datarate = min(station.datarate, satellite.datarate) # Get the minimum of the two data rates
         self.data_volume = self.datarate * self.t_duration
 
+    @classmethod
+    def from_solution(cls, data, station: GroundStation, satellite: Satellite):
+        return cls(contact, station, satellite)
+
     @property
     def lon(self):
         return self.longitude
@@ -535,4 +586,42 @@ class Contact():
     def alt(self):
         return self.altitude
 
+    def as_dict(self, minimal: bool = False):
+
+        if minimal:
+            return {
+                'id': self.id,
+                'station_id': self.station_id,
+                'provider_id': self.provider_id,
+                'satellite_id': self.satellite_id,
+                't_start': self.t_start.isoformat(),
+                't_end': self.t_end.isoformat(),
+                't_duration': self.t_duration,
+                'cost': self.cost,
+                'datavolume': self.data_volume
+            }
+        else:
+            return {
+                'id': self.id,
+                'station_id': self.station_id,
+                'station_name': self.station_name,
+                'provider_id': self.provider_id,
+                'provider': self.provider,
+                'longitude': self.longitude,
+                'latitude': self.latitude,
+                'altitude': self.altitude,
+                'satellite_id': self.satellite_id,
+                'satcat_id': self.satcat_id,
+                'satellite_name': self.satellite_name,
+                'tle_line1': self.tle.line1,
+                'tle_line2': self.tle.line2,
+                't_start': self.t_start.isoformat(),
+                't_end': self.t_end.isoformat(),
+                't_duration': self.t_duration,
+                'cost': self.cost,
+                'cost_per_pass': self.cost_per_pass,
+                'cost_per_minute': self.cost_per_minute,
+                'datarate': self.datarate,
+                'data_volume': self.data_volume
+            }
 

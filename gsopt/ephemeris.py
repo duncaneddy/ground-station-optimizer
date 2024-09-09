@@ -11,6 +11,7 @@ import streamlit as st
 import polars as pl
 import brahe as bh
 
+from gsopt.models import Satellite
 from gsopt.utils import get_last_modified_time_as_datetime
 
 
@@ -133,3 +134,32 @@ def parse_tle_file(filepath):
             i += 3
 
     return tle_records
+
+def satellites_from_constellation(constellation: str, datarate: float = 2.0e9) -> list[Satellite]:
+
+    # Load the TLE data
+    tle_data = get_tles()
+
+    # Filter the TLE data for the specified constellation
+    constellation_tles = [tle for tle in tle_data if constellation.upper() in tle['object_name']]
+
+    # Create a list of Satellite objects from the TLE data
+    satellites = [Satellite(tle['satcat_id'], tle['object_name'], tle['tle_line1'], tle['tle_line2'], datarate=datarate) for tle in constellation_tles]
+
+    return satellites
+
+def satellite_from_satcat_id(satcat_id: str, datarate: float = 2.0e9) -> Satellite:
+
+    # Load the TLE data
+    tle_data = get_tles()
+
+    # Filter the TLE data for the specified satcat_id
+    tle = next((tle for tle in tle_data if tle['satcat_id'] == str(satcat_id)), None)
+
+    if tle is None:
+        raise ValueError(f"Satellite with satcat_id {satcat_id} not found in TLE data")
+
+    # Create a Satellite object from the TLE data
+    satellite = Satellite(tle['satcat_id'], tle['object_name'], tle['tle_line1'], tle['tle_line2'], datarate=datarate)
+
+    return satellite

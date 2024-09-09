@@ -12,6 +12,7 @@ import pyomo.kernel as pk
 
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode
 from gsopt.models import OptimizationWindow
+from gsopt.utils import time_milp_generation
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,7 @@ class MinConstellationDataDownlinkConstraint(pk.block, GSOptConstraint):
         self.period = period
         self.step = step
 
+    @time_milp_generation
     def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
@@ -124,6 +126,7 @@ class MinSatelliteDataDownlinkConstraint(pk.block, GSOptConstraint):
         self.satellite_key = satellite_key
         self._matched_id = None
 
+    @time_milp_generation
     def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
@@ -201,6 +204,7 @@ class MaxOperationalCostConstraint(pk.block, GSOptConstraint):
 
         self.value = value
 
+    @time_milp_generation
     def _generate_constraints(self,
                              station_nodes: dict[str, StationNode] | None = None,
                              contact_nodes: dict[str, ContactNode] | None = None,
@@ -235,6 +239,7 @@ class MaxAntennaUsageConstraint(pk.block, GSOptConstraint):
         pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
+    @time_milp_generation
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
                              station_nodes: dict[str, StationNode] | None = None,
                              contact_nodes: dict[str, ContactNode] | None = None,
@@ -276,6 +281,7 @@ class SatelliteContactExclusionConstraint(pk.block, GSOptConstraint):
         pk.block.__init__(self)
         GSOptConstraint.__init__(self)
 
+    @time_milp_generation
     def _generate_constraints(self,
                              contact_nodes: dict[str, ContactNode] | None = None,
                              opt_window: OptimizationWindow | None = None, **kwargs):
@@ -283,8 +289,8 @@ class SatelliteContactExclusionConstraint(pk.block, GSOptConstraint):
         Generate the constraint_list function.
         """
 
-        # Filter satellites by contacts
-        contact_nodes_by_satellite = sorted(contact_nodes.values(), key=lambda cn: cn.satellite.id)
+        # Filter contacts by satellite
+        contact_nodes_by_satellite = sorted(contact_nodes.values(), key=lambda cn: str(cn.satellite.id))
 
         for sat_id, sat_contacts in groupby(contact_nodes_by_satellite, lambda cn: cn.satellite.id):
 
@@ -297,6 +303,39 @@ class SatelliteContactExclusionConstraint(pk.block, GSOptConstraint):
             for x, y in combinations(sat_contacts, 2):
                 if x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end:
                     self.constraints.append(pk.constraint(x.var + y.var <= 1))
+
+class StationContactExclusionConstraint(pk.block, GSOptConstraint):
+    """
+    Enforces that a station cannot have contacts with two different satellites at the same time.
+    """
+
+    def __init__(self, **kwargs):
+        pk.block.__init__(self)
+        GSOptConstraint.__init__(self)
+
+    @time_milp_generation
+    def _generate_constraints(self,
+                             contact_nodes: dict[str, ContactNode] | None = None,
+                             opt_window: OptimizationWindow | None = None, **kwargs):
+        """
+        Generate the constraint_list function.
+        """
+
+        # Filter contacts by station
+        contact_nodes_by_station = sorted(contact_nodes.values(), key=lambda cn: str(cn.station.id))
+
+        for sat_id, sta_contacts in groupby(contact_nodes_by_station, lambda cn: cn.station.id):
+
+            # Sort contacts by start time
+            sta_contacts = sorted(sta_contacts, key=lambda cn: cn.model.t_start)
+
+            # Test all combinations of two contacts to see if they overlap
+            # This could be done more efficiently, but the number of contacts is generally expected to be
+            # small enough that this is not a problem
+            for x, y in combinations(sta_contacts, 2):
+                if x.model.t_start <= y.model.t_end and y.model.t_start <= x.model.t_end:
+                    self.constraints.append(pk.constraint(x.var + y.var <= 1))
+
 
 class MaxContactGapConstraint(pk.block, GSOptConstraint):
     """
@@ -316,6 +355,7 @@ class MaxContactGapConstraint(pk.block, GSOptConstraint):
 
         self.value = value
 
+    @time_milp_generation
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
                              station_nodes: dict[str, StationNode] | None = None,
                              contact_nodes: dict[str, ContactNode] | None = None,
@@ -339,7 +379,7 @@ class MaxContactGapConstraint(pk.block, GSOptConstraint):
                 # Working expression for the next scheduled contact
                 expr = pk.expression(0)
 
-                for j, cn_j in enumerate(sat_contacts[i + 1:]):
+                for j, cn_j in enumerate(filter(lambda cn: cn.model.t_start > cn_i.model.t_end, sat_contacts)):
                     # Auxiliary variable if contact j is the next scheduled after contact i
                     self.variable_dict[(sat_id, cn_i.model.id, cn_j.model.id)] = pk.variable(value=0, domain=pk.Binary)
 
@@ -368,6 +408,7 @@ class MaxProvidersConstraint(pk.block, GSOptConstraint):
 
         self.num_providers = num_providers
 
+    @time_milp_generation
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
@@ -391,6 +432,7 @@ class MinContactDurationConstraint(pk.block, GSOptConstraint):
 
         self.min_duration = min_duration
 
+    @time_milp_generation
     def _generate_constraints(self, contact_nodes: dict[str, ContactNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
@@ -430,6 +472,7 @@ class MaxContactsPerPeriodConstraint(pk.block, GSOptConstraint):
         self.period = period
         self.step = step
 
+    @time_milp_generation
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None,
                              station_nodes: dict[str, StationNode] | None = None,
                              contact_nodes: dict[str, ContactNode] | None = None,
@@ -473,6 +516,7 @@ class RequireProviderConstraint(pk.block, GSOptConstraint):
         self.key = key
         self._matched_id = None
 
+    @time_milp_generation
     def _generate_constraints(self, provider_nodes: dict[str, ProviderNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.
@@ -526,6 +570,7 @@ class RequireStationConstraint(pk.block, GSOptConstraint):
 
         self._matched_id = None
 
+    @time_milp_generation
     def _generate_constraints(self, station_nodes: dict[str, StationNode] | None = None, **kwargs):
         """
         Generate the constraint_list function.

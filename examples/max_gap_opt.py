@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 console = Console()
 
 # Define the optimization window
-opt_start = datetime.datetime(2022, 1, 1, 0, 0, 0)
+opt_start = datetime.datetime.utcnow()
 opt_end = opt_start + datetime.timedelta(days=365)
 
 # The simulation window is the duration over which we want to simulate contacts.
@@ -49,7 +49,8 @@ opt_window = OptimizationWindow(
 scengen = ScenarioGenerator(opt_window)
 
 # Use the Capella constellation as the reference constellation
-scengen.add_constellation('CAPELLA')
+# scengen.add_constellation('CAPELLA')
+scengen.add_satellite(25544)
 
 # Consider all providers
 scengen.add_all_providers()
@@ -75,9 +76,11 @@ optimizer.set_objective(
 optimizer.add_constraints([
     MaxProvidersConstraint(num_providers=3), # At most 3 providers
     MinContactDurationConstraint(min_duration=180.0), # Minimum 3 minute contact duration
-    MaxOperationalCostConstraint(value=800000), # Limit monthly operational cost to $200,000
     MinSatelliteDataDownlinkConstraint(value=100.0e9, period=86400, step=3600), # Ensure at least 100 Gb of data downlinked per day
-    MaxAntennaUsageConstraint(),
+                                                                                # This constraint is key for a MaxGap optimization
+                                                                                # because otherwise the solver will just not
+                                                                                # schedule any contacts to minimize the gap
+    StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(), # This constraint should always be added to avoid self-interference
 ])
 

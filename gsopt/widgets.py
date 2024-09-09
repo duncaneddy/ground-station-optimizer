@@ -129,9 +129,9 @@ def satellites_from_dataframe(df: pl.DataFrame) -> list[Satellite]:
     Create a list of Satellite objects from a Polars DataFrame
     """
     satellites = []
-    for idx, sat in enumerate(df.iter_rows(named=True)):
+    for _, sat in enumerate(df.iter_rows(named=True)):
         satellites.append(Satellite(
-            id=idx,
+            # id=idx,
             satcat_id=sat['satcat_id'],
             name=sat['object_name'],
             tle_line1=sat['tle_line1'],
