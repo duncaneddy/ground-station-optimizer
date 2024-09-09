@@ -148,18 +148,17 @@ optimizer.set_objective(
 optimizer.add_constraints([
     MaxProvidersConstraint(num_providers=3),
     MinContactDurationConstraint(min_duration=300.0),
-    MinConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
-    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
-    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
-    MaxOperationalCostConstraint(value=800000),
+    MinConstellationDataDownlinkConstraint(value=1.0e1, period=86400.0, step=300),
+    # MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
+    # MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
+    # MaxOperationalCostConstraint(value=1000000),
     # MaxAntennaUsageConstraint(), # This is more computationally expensive
-    StationContactExclusionConstraint(),
     StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(),
     # MaxContactGapConstraint(value=60.0*90), # This is redundant with the MinMaxContactGapObjective
     MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
-    RequireProviderConstraint('Viasat'),
-    RequireStationConstraint(name='Oregon', provider='Aws')
+    # RequireProviderConstraint('Viasat'),
+    # RequireStationConstraint(name='Oregon', provider='Aws')
 ])
 
 # Solve the optimization problem

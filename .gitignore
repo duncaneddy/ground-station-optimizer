@@ -8,7 +8,7 @@
 # Development Files
 .python-version
 data/single_sat_solution.json
-full_example_solution.json
+full_example.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

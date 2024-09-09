@@ -359,12 +359,13 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         solution['contacts'] = [cn.model.as_dict(minimal=True) for cn in sorted(self.contact_nodes.values(), key=lambda c: c.model.t_start) if cn.var() > 0]
 
         # Add station-satellite indicators
-        solution['station_satellite_indicators'] = {}
+        solution['stations_by_satellite'] = {}
 
         for sat_id, sat in self.satellites.items():
             solution['stations_by_satellite'][sat_id] = []
             for gs_id, gs in self.stations.items():
-                if self.station_satellite_nodes[(gs_id, sat_id)]() > 0:
+                if (gs_id, sat_id) in self.station_satellite_nodes and \
+                    self.station_satellite_nodes[(gs_id, sat_id)]() > 0:
                     solution['stations_by_satellite'][sat_id].append(gs_id)
 
         return solution
