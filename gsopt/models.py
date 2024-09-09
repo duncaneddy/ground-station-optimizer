@@ -562,7 +562,7 @@ class Contact():
 
         # Set cost values
 
-        self.cost = station.cost_per_pass + self.t_duration*60*station.cost_per_minute
+        self.cost = station.cost_per_pass + self.t_duration/60*station.cost_per_minute
         self.cost_per_pass = station.cost_per_pass
         self.cost_per_minute = station.cost_per_minute
 
