@@ -595,7 +595,7 @@ class Contact():
 
     @classmethod
     def from_solution(cls, data, station: GroundStation, satellite: Satellite):
-        return cls(contact, station, satellite)
+        return cls(data, station, satellite)
 
     @property
     def lon(self):

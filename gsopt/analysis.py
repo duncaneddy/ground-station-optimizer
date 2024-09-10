@@ -57,7 +57,7 @@ class Solution:
     contact_dict: dict[str, SolutionContact]
     selected_provider_dict: dict[str, GroundStationProvider]
     selected_station_dict: dict[str, GroundStation]
-    stattions_by_satellite: dict[str: list[str]]
+    stations_by_satellite: dict[str: list[str]]
 
     @property
     def satellites(self):
@@ -369,6 +369,10 @@ def analyze_solution(solution: Solution, data_unit: DataUnits = DataUnits.b):
     # Compute gap statistics
     gap_stats = compute_gap_statistics(contact_gaps['all'])
 
+    # Cost and data downlink statistics are repetitions of the values
+    # saved in the solution JSON file. They are computed here for convenience and
+    # cross-verification.
+
     # Compute Costs
     total_cost = 0.0
     total_fixed_cost = 0.0
@@ -391,8 +395,8 @@ def analyze_solution(solution: Solution, data_unit: DataUnits = DataUnits.b):
         monthly_operational_cost += sn.monthly_cost
 
     ## Add Satellite Licensing Costs
-    for sat_id in solution.stattions_by_satellite.keys():
-        for station_id in solution.stattions_by_satellite[sat_id]:
+    for sat_id in solution.stations_by_satellite.keys():
+        for station_id in solution.stations_by_satellite[sat_id]:
             total_cost += solution.station_dict[station_id].per_satellite_license_cost
 
     ## Contact Costs - Operational

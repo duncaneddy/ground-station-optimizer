@@ -159,7 +159,8 @@ class MinMaxContactGapObjective(pk.block, GSOptObjective):
                     # Add constraint to ensure that the associated scheduled gap is less than the maximum
                     self.constraints.append(pk.constraint((cn_j.model.t_start - cn_i.model.t_end) * self.variable_dict[
                         (sat_id, cn_i.model.id, cn_j.model.id)] <= self.variable_dict['max_gap']))
+                    # print(self.constraints[-1].expr)
 
 
                 # Add constraint that only one of the auxiliary variables can be 1 if the contact node is scheduled
-                self.constraints.append(pk.constraint(expr <= contact_nodes[cn_i.id].var))
+                self.constraints.append(pk.constraint(expr == contact_nodes[cn_i.id].var))

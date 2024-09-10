@@ -21,7 +21,7 @@ from rich.table import Table
 
 from gsopt import utils
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode, SatelliteNode
-from gsopt.models import GroundStation, Satellite, OptimizationWindow
+from gsopt.models import GroundStation, Satellite, OptimizationWindow, DataUnits
 from gsopt.optimizer import GroundStationOptimizer
 from gsopt.utils import APPLIED_FILTER_WARNINGS
 
@@ -346,7 +346,76 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         solution['n_vars'] = self.n_vars
         solution['n_constraints'] = self.n_constraints
 
-        solution['statistics'] = {}
+        # Compute Costs
+        total_cost = 0.0
+        total_fixed_cost = 0.0
+        total_operational_cost = 0.0
+        monthly_operational_cost = 0.0
+
+        ## Provider Costs - Fixed
+        for pn_id, pn in self.provider_nodes.items():
+            if pn.var() > 0:
+                total_cost += pn.model.integration_cost
+                total_fixed_cost += pn.model.integration_cost
+
+        ## Station Costs - Fixed & Operational
+        for sn_id, sn in self.station_nodes.items():
+            if sn.var() > 0:
+                total_cost += sn.model.setup_cost
+                total_fixed_cost += sn.model.setup_cost
+
+                extr_opt_cost = (12 * self.opt_window.T_opt) / (365.25 * 86400.0) * sn.model.monthly_cost
+                total_cost += extr_opt_cost
+                total_operational_cost += extr_opt_cost
+                monthly_operational_cost += sn.model.monthly_cost
+
+        ## Add Satellite Licensing Costs
+        for (station_id, sat_id) in self.station_satellite_nodes.keys():
+            if self.station_satellite_nodes[(station_id, sat_id)]() > 0:
+                total_cost += self.station_nodes[station_id].model.per_satellite_license_cost
+
+        ## Contact Costs - Operational
+        for cn_id, cn in self.contact_nodes.items():
+            total_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
+            total_operational_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
+            monthly_operational_cost += cn.model.cost / self.opt_window.T_sim * (365.25 * 86400.0) / 12.0
+
+        # Data Downlink Statistics
+        total_data_downlinked = sum(
+            [c.model.data_volume  for c in self.contact_nodes.values() if c.var() > 0]) * self.opt_window.T_opt / self.opt_window.T_sim
+
+        datavolume_by_satellite = {
+            'total': {},
+            'total_GB': {},
+            'daily_avg': {},
+            'daily_avg_GB': {}
+        }
+
+        for sat_id, sat_contacts in groupby(self.contact_nodes.values(), lambda c: c.model.satellite_id):
+            datavolume_by_satellite['total'][sat_id] = sum([c.model.data_volume for c in
+                                                            sat_contacts]) * self.opt_window.T_opt / self.opt_window.T_sim
+            datavolume_by_satellite['total_GB'][sat_id] = datavolume_by_satellite['total'][sat_id] / DataUnits.GB.value
+            datavolume_by_satellite['daily_avg'][sat_id] = datavolume_by_satellite['total'][sat_id] / (
+                        self.opt_window.T_opt / 86400.0)
+            datavolume_by_satellite['daily_avg_GB'][sat_id] = datavolume_by_satellite['daily_avg'][sat_id] / DataUnits.GB.value
+
+        solution['statistics'] = {
+            'costs': {
+                'total': total_cost,
+                'fixed': total_fixed_cost,
+                'operational': total_operational_cost,
+                'monthly_operational': monthly_operational_cost,
+            },
+            'data_downlinked': { # Value values in bits
+                'total': total_data_downlinked,
+                'total_GB': total_data_downlinked / DataUnits.GB.value,
+                'by_satellite': datavolume_by_satellite,
+            },
+            'contact_time_s': {
+                'total': sum([c.model.t_duration for c in self.contact_nodes.values() if c.var() > 0]) * self.opt_window.T_opt / self.opt_window.T_sim,
+                'by_satellite': {sat_id: sum([c.model.t_duration * c.var() for c in sat_contacts]) / (self.opt_window.T_sim / 86400.0) for sat_id, sat_contacts in groupby(self.contact_nodes.values(), lambda c: c.model.satellite_id)}
+            }
+        }
 
         # Optimization Window
         solution['optimization_window'] = self.opt_window.as_dict()
