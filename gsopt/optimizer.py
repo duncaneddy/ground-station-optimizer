@@ -98,7 +98,7 @@ class GroundStationOptimizer(metaclass=ABCMeta):
         # Check that the simulation window is within the EOP
         utils.initialize_eop() # Ensure EOP is initialized before checking
         if t_end.mjd() > max(bh.EOP._data.keys()):
-            msg = f"Simulation end time {self.opt_window.sim_end} is after the EOP end time {max(bh.EOP._data.keys())}"
+            msg = f"Simulation end time {self.opt_window.sim_end} ({self.opt_window.sim_end.mjd()}) is after the EOP end time {max(bh.EOP._data.keys())}"
             logger.error(msg)
             raise RuntimeError(msg)
 

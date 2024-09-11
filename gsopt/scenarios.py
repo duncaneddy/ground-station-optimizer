@@ -125,7 +125,7 @@ class ScenarioGenerator():
         provider_file = DIR / '..' / 'data' / 'groundstations' / provider
 
         with open(provider_file, 'r') as f:
-            self.providers.append(GroundStationProvider.load_geojson(f))
+            self.providers.append(GroundStationProvider.load_geojson_file(f))
 
     def add_all_providers(self):
         for provider in PROVIDERS:

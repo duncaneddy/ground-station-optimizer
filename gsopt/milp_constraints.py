@@ -24,7 +24,9 @@ class GSOptConstraint(metaclass=ABCMeta):
     Enforces the implementation of the _generate_constraints method.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+
+        self.kwargs = kwargs
 
         self.constraints = pk.constraint_list()
 
@@ -32,6 +34,11 @@ class GSOptConstraint(metaclass=ABCMeta):
     def _generate_constraints(self):
         pass
 
+    def dict(self):
+        return {
+            'type': self.__class__.__name__,
+            'args': self.kwargs
+        }
 
 class MinConstellationDataDownlinkConstraint(pk.block, GSOptConstraint):
     """
@@ -46,7 +53,7 @@ class MinConstellationDataDownlinkConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, value=value, period=period, step=step)
 
         if period <= 0:
             raise ValueError("Period must be greater than zero.")
@@ -107,7 +114,7 @@ class MinSatelliteDataDownlinkConstraint(pk.block, GSOptConstraint):
     def __init__(self, value: float = 0.0, period: float = 86400.0, step: float = 300,
                  satellite_key: str | int | None = None, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, value=value, period=period, step=step, satellite_key=satellite_key)
 
         if period <= 0:
             raise ValueError("Period must be greater than zero.")
@@ -197,7 +204,7 @@ class MaxOperationalCostConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, value: float | None = None, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, value=value)
 
         if not value:
             raise ValueError("Value must be provided.")
@@ -348,7 +355,7 @@ class MaxContactGapConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, value: float | None = None, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, value=value)
 
         if not value:
             raise ValueError("Value must be provided.")
@@ -404,7 +411,7 @@ class MaxProvidersConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, num_providers: int = 1, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, num_providers=num_providers)
 
         self.num_providers = num_providers
 
@@ -425,7 +432,7 @@ class MinContactDurationConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, min_duration: float = 300, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, min_duration=min_duration)
 
         if min_duration <= 0:
             raise ValueError("Minimum duration must be greater than zero.")
@@ -457,7 +464,7 @@ class MaxContactsPerPeriodConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, value: int = 16, period: float = 86400.0, step: float = 300, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, value=value, period=period, step=step)
 
         if period <= 0:
             raise ValueError("Period must be greater than zero.")
@@ -508,7 +515,7 @@ class RequireProviderConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, key: str = None, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, key=key)
 
         if key is None:
             raise ValueError("A unique key (id or name) for the provider must be provided")
@@ -549,7 +556,7 @@ class RequireStationConstraint(pk.block, GSOptConstraint):
 
     def __init__(self, id: str | None = None, name: str | None = None, provider: str | None = None, **kwargs):
         pk.block.__init__(self)
-        GSOptConstraint.__init__(self)
+        GSOptConstraint.__init__(self, id=id, name=name, provider=provider)
 
         self.required_id = None
         self.required_name = None

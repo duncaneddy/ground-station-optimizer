@@ -147,8 +147,8 @@ optimizer.compute_contacts()
 # These are the available objectives that can be set on the optimizer. Only one objective can be set at a time.
 optimizer.set_objective(
     # MinCostObjective()
-    # MaxDataDownlinkObjective()
-    MinMaxContactGapObjective()
+    MaxDataDownlinkObjective()
+    # MinMaxContactGapObjective()
 )
 
 # Add Constraints

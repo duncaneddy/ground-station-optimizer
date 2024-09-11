@@ -20,6 +20,7 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
 from gsopt import utils
+from gsopt.milp_constraints import GSOptConstraint
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode, SatelliteNode
 from gsopt.models import GroundStation, Satellite, OptimizationWindow, DataUnits
 from gsopt.optimizer import GroundStationOptimizer
@@ -334,6 +335,12 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             'contact_compute_time': self.contact_compute_time,
             'problem_setup_time': self.problem_setup_time,
             'solve_time': self.solve_time,
+        }
+
+        # Problem Formulation
+        solution['problem'] = {
+            'objective': self.obj_block.dict(),
+            'constraints': [c.dict() for c in self.constraint_blocks if isinstance(c, GSOptConstraint)]
         }
 
         # Solution Output

@@ -19,7 +19,9 @@ class GSOptObjective(metaclass=ABCMeta):
     Enforces the implementation of the _generate_objective method.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
         self.obj = pk.objective()
 
         self.obj.expr = 0
@@ -27,6 +29,12 @@ class GSOptObjective(metaclass=ABCMeta):
     @abstractmethod
     def _generate_objective(self):
         pass
+
+    def dict(self):
+        return {
+            'type': self.__class__.__name__,
+            'args': self.kwargs
+        }
 
 
 class MinCostObjective(pk.block, GSOptObjective):
@@ -37,7 +45,7 @@ class MinCostObjective(pk.block, GSOptObjective):
 
     def __init__(self, **kwargs):
         pk.block.__init__(self)
-        GSOptObjective.__init__(self)
+        GSOptObjective.__init__(self, **kwargs)
 
         # Set objective direction
         self.obj.sense = pk.minimize
@@ -80,7 +88,7 @@ class MaxDataDownlinkObjective(pk.block, GSOptObjective):
 
     def __init__(self, **kwargs):
         pk.block.__init__(self)
-        GSOptObjective.__init__(self)
+        GSOptObjective.__init__(self, **kwargs)
 
         # Set objective direction
         self.obj.sense = pk.maximize
@@ -106,7 +114,7 @@ class MinMaxContactGapObjective(pk.block, GSOptObjective):
 
     def __init__(self, **kwargs):
         pk.block.__init__(self)
-        GSOptObjective.__init__(self)
+        GSOptObjective.__init__(self, **kwargs)
 
         # Set objective direction
         self.obj.sense = pk.minimize

@@ -3,6 +3,9 @@ Functions for managing ephemeris data
 '''
 
 import os
+import pathlib
+
+import pathlib
 import logging
 import datetime
 import httpx
@@ -16,6 +19,8 @@ from gsopt.utils import get_last_modified_time_as_datetime
 
 
 logger = logging.getLogger()
+
+EPHEMERIS_PATH = (pathlib.Path(__file__).parent.parent /  'data/celestrak_tles.txt').absolute()
 
 def get_latest_celestrak_tles(output_dir='./data'):
     CELESTRAK_URL = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=ACTIVE&FORMAT=TLE'
@@ -42,7 +47,7 @@ def get_latest_celestrak_tles(output_dir='./data'):
 def get_tles():
 
     # Check on time of last update
-    last_update = get_last_modified_time_as_datetime('./data/celestrak_tles.txt')
+    last_update = get_last_modified_time_as_datetime(EPHEMERIS_PATH)
 
     logger.info(f'Last TLE update: {last_update.isoformat()}')
 
@@ -54,7 +59,7 @@ def get_tles():
         logger.info(f'TLE data is {(datetime.datetime.now() - last_update).days} days old. TLE data is up to date.')
 
     # Parse the TLE file and return the records
-    return parse_tle_file('./data/celestrak_tles.txt')
+    return parse_tle_file(EPHEMERIS_PATH)
 
 
 @st.cache_resource(ttl=3600*12) # Expire cache every 12 hours

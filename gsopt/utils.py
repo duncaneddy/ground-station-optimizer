@@ -81,7 +81,7 @@ def get_time_string(t: float) -> str:
         return (f"{math.floor(t / 86400)} days, {math.floor(t / 3600) % 24} hours, {math.floor(t / 60) % 60} minutes, "
                 f"and {t % 60:.2f} seconds")
 
-def initialize_eop():
+def initialize_eop(filepath: str = None):
     """
     Helper function to initialize the Earth Orientation Parameters (EOP) data for Brahe.
     Some functions in this application require the EOP data to be loaded, namely checking
@@ -89,11 +89,18 @@ def initialize_eop():
 
     """
     if not bh.EOP._initialized:
-        if pathlib.Path("data/iau2000A_finals_ab.txt").exists():
-            bh.EOP.load("data/iau2000A_finals_ab.txt")
-        else:
-            bh.EOP._initialize()
 
+        if filepath:
+            EOP_PATH = pathlib.Path(filepath).absolute()
+        else:
+            EOP_PATH = (pathlib.Path(__file__).parent.parent /  'data/iau2000A_finals_ab.txt').absolute()
+
+        if EOP_PATH.exists():
+            logger.debug(f'EOP data found at "{EOP_PATH}". Loading EOP data from file.')
+            bh.EOP.load(EOP_PATH)
+        else:
+            logger.debug("EOP data not found. Using brahe default EOP data.")
+            bh.EOP._initialize()
 
 def ground_stations_from_geojson(geojson: Dict[str, Any]) -> list[GroundStation]:
     """
