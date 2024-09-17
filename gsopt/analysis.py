@@ -208,9 +208,14 @@ def compute_gap_statistics(contact_gaps: list[dict]):
 
     # Compute 5 and 95 percentiles
     sorted_gap_durations = sorted([g['gap_duration_s'] for g in contact_gaps])
-    gap_duration_s_p5bins = statistics.quantiles(sorted_gap_durations, n=20)
-    gap_duration_s_p05 = gap_duration_s_p5bins[0]
-    gap_duration_s_p95 = gap_duration_s_p5bins[18]
+
+    gap_duration_s_p05 = 0
+    gap_duration_s_p95 = 0
+
+    if len(sorted_gap_durations) > 2:
+        gap_duration_s_p5bins = statistics.quantiles(sorted_gap_durations, n=20)
+        gap_duration_s_p05 = gap_duration_s_p5bins[0]
+        gap_duration_s_p95 = gap_duration_s_p5bins[18]
 
     return {
         'num_gaps': num_gaps,
@@ -251,9 +256,14 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
         sat_max_duration = max([c.t_duration for c in sat_contacts])
         sat_min_duration = min([c.t_duration for c in sat_contacts])
         sat_sorted_durations = sorted([c.t_duration for c in sat_contacts])
-        sat_duration_s_p5bins = statistics.quantiles(sat_sorted_durations, n=20)
-        sat_duration_s_p05 = sat_duration_s_p5bins[0]
-        sat_duration_s_p95 = sat_duration_s_p5bins[18]
+
+        sat_duration_s_p05 = 0
+        sat_duration_s_p95 = 0
+
+        if len(sat_sorted_durations) > 2:
+            sat_duration_s_p5bins = statistics.quantiles(sat_sorted_durations, n=20)
+            sat_duration_s_p05 = sat_duration_s_p5bins[0]
+            sat_duration_s_p95 = sat_duration_s_p5bins[18]
 
         sat_contact_stats[sat_id] = {
             'num_contacts': len(sat_contacts),
@@ -266,7 +276,11 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
 
         # Compute contact gaps
         sat_contact_gaps = compute_contact_gaps(sat_contacts)[sat_id]
-        sat_gap_stats[sat_id] = compute_gap_statistics(sat_contact_gaps)
+
+        if len(sat_contact_gaps) > 0:
+            sat_gap_stats[sat_id] = compute_gap_statistics(sat_contact_gaps)
+        else:
+            sat_gap_stats[sat_id] = {}
 
     return {
         'num_contacts': num_contacts,
@@ -275,7 +289,8 @@ def compute_contact_statistics(contacts: list[Contact] | list[SolutionContact]):
         'min_duration_s': min_duration,
         'duration_s_p05': contact_duration_s_p05,
         'duration_s_p95': contact_duration_s_p95,
-        'satellite_contact_stats': sat_contact_stats
+        'satellite_contact_stats': sat_contact_stats,
+        'satellite_gap_stats': sat_gap_stats
     }
 
 def plot_contact_duration_histogram(contacts: list[Contact] | list[SolutionContact], satellite_id: str | None = None, units: str = 'minutes', x_axis_min: float = 0):
