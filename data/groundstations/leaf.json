@@ -6,15 +6,14 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          168.3792,
-          -46.5281,
-          16.0
+          168.37,
+          -46.52
         ]
       },
       "properties": {
         "name": "Awarua",
         "provider": "Leaf Space",
-        "frequency_bands": ["S", "X"]
+        "frequency_bands": ["S", "X", "Ka"]
       }
     },
     {
@@ -22,9 +21,8 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          138.84949,
-          -32.962,
-          540.0
+          138.85,
+          -32.96
         ]
       },
       "properties": {
@@ -38,15 +36,14 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          115.34171,
-          -29.01042,
-          270.0
+          115.34,
+          -29.01
         ]
       },
       "properties": {
         "name": "Nangetty",
         "provider": "Leaf Space",
-        "frequency_bands": ["UHF", "S", "X"]
+        "frequency_bands": ["S", "X"]
       }
     },
     {
@@ -54,9 +51,8 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          80.72485,
-          7.27423,
-          462.0
+          80.72,
+          7.27
         ]
       },
       "properties": {
@@ -70,9 +66,8 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          49.48583,
-          40.46628,
-          764.0
+          49.49,
+          40.47
         ]
       },
       "properties": {
@@ -86,15 +81,14 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          9.03478,
-          45.69715,
-          296.0
+          9.04,
+          45.70
         ]
       },
       "properties": {
         "name": "Lomazzo",
         "provider": "Leaf Space",
-        "frequency_bands": ["S", "X"]
+        "frequency_bands": ["UHF"]
       }
     },
     {
@@ -102,9 +96,8 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -0.8584,
-          60.74831,
-          19.0
+          -0.86,
+          60.75
         ]
       },
       "properties": {
@@ -118,15 +111,14 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -4.16204,
-          38.67404,
-          690.0
+          -4.16,
+          38.67
         ]
       },
       "properties": {
         "name": "Puertollano",
         "provider": "Leaf Space",
-        "frequency_bands": ["UHF", "VHF", "S", "X"]
+        "frequency_bands": ["UHF", "S"]
       }
     },
     {
@@ -134,29 +126,57 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -8.17419,
-          51.95358,
-          95.0
-        ]
-      },
-      "properties": {
-        "name": "Midleton",
-        "provider": "Leaf Space",
-        "frequency_bands": ["UHF", "VHF", "S"]
-      }
-    },
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -20.24609,
-          65.64737,
-          53.0
+          -20.25,
+          65.65
         ]
       },
       "properties": {
         "name": "Blonduos",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -25.14,
+          37.00
+        ]
+      },
+      "properties": {
+        "name": "Santa Maria",
+        "provider": "Leaf Space",
+        "frequency_bands": ["UHF","S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.15,
+          43.31
+        ]
+      },
+      "properties": {
+        "name": "Kaspichan",
+        "provider": "Leaf Space",
+        "frequency_bands": ["UHF", "S"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          23.44,
+          42.48
+        ]
+      },
+      "properties": {
+        "name": "Plana",
         "provider": "Leaf Space",
         "frequency_bands": ["S", "X"]
       }
@@ -166,13 +186,102 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          -25.13726,
-          36.99739,
-          194.0
+          -70.91,
+          -53.16
         ]
       },
       "properties": {
-        "name": "Santa Maria",
+        "name": "Punta Arenas",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.36,
+          45.49
+        ]
+      },
+      "properties": {
+        "name": "Vimercate",
+        "provider": "Leaf Space",
+        "frequency_bands": ["UHF", "S"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          126.53,
+          33.49
+        ]
+      },
+      "properties": {
+        "name": "Jeju City",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          57.68,
+          -20.14
+        ]
+      },
+      "properties": {
+        "name": "Mon Loisir",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -110.31,
+          24.14
+        ]
+      },
+      "properties": {
+        "name": "La Paz",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          168.37,
+          -46.52
+        ]
+      },
+      "properties": {
+        "name": "Awarua",
+        "provider": "Leaf Space",
+        "frequency_bands": ["S", "X", "Ka"]
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          27.71,
+          -25.89
+        ]
+      },
+      "properties": {
+        "name": "Pretoria",
         "provider": "Leaf Space",
         "frequency_bands": ["S", "X"]
       }
