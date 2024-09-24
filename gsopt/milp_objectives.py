@@ -69,7 +69,7 @@ class MinCostObjective(pk.block, GSOptObjective):
             self.obj.expr += sn.model.setup_cost * station_nodes[sn_id].var
 
             # Add monthly station costs, normalized to the optimization period
-            self.obj.expr += (12 * opt_window.T_opt) / (365.25 * 86400.0) * sn.model.monthly_cost * station_nodes[sn_id].var
+            self.obj.expr += (12 * opt_window.T_opt) / (365.25 * 86400.0 * opt_window.T_sim) * sn.model.monthly_cost * station_nodes[sn_id].var
 
             # Add satellite licensing costs for the station
             for key in filter(lambda x: x[0] == sn_id, station_satellite_nodes.keys()):

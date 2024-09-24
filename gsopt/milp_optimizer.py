@@ -371,7 +371,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
                 total_cost += sn.model.setup_cost
                 total_fixed_cost += sn.model.setup_cost
 
-                extr_opt_cost = (12 * self.opt_window.T_opt) / (365.25 * 86400.0) * sn.model.monthly_cost
+                extr_opt_cost = (12 * self.opt_window.T_opt) / (365.25 * 86400.0 * self.opt_window.T_sim) * sn.model.monthly_cost
                 total_cost += extr_opt_cost
                 total_operational_cost += extr_opt_cost
                 monthly_operational_cost += sn.model.monthly_cost
@@ -383,9 +383,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         ## Contact Costs - Operational
         for cn_id, cn in self.contact_nodes.items():
-            total_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
-            total_operational_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
-            monthly_operational_cost += cn.model.cost / self.opt_window.T_sim * (365.25 * 86400.0) / 12.0
+            if cn.var() > 0:
+                total_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
+                total_operational_cost += self.opt_window.T_opt / self.opt_window.T_sim * cn.model.cost
+                monthly_operational_cost += cn.model.cost / self.opt_window.T_sim * (365.25 * 86400.0) / 12.0
 
         # Data Downlink Statistics
         total_data_downlinked = sum(
