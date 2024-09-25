@@ -80,20 +80,24 @@ class Solution:
         return list(self.selected_station_dict.values())
 
 
-def load_solution(filepath: str):
+def load_solution_from_file(filepath: str):
+    with open(filepath, 'r') as f:
+        data = json.load(f)
+
+    return load_solution(data)
+
+
+def load_solution(data: dict):
     """
     Load an optimization solution from a JSON file and return the satellite, provider, station, and contact
     dictionaries. This function is useful for analyzing the results of an optimization run.
 
     Args:
-        filepath: Path to the JSON file containing the optimization solution
+        data (dict): Path to the JSON file containing the optimization solution
 
     Returns:
         solution (Solution): Dataclass containing the satellites, providers, stations, and contacts in the solution
     """
-
-    with open(filepath, 'r') as f:
-        data = json.load(f)
 
     # Parse Optimization Window
     opt_window = OptimizationWindow(**data["optimization_window"])
