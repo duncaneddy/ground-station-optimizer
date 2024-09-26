@@ -300,8 +300,12 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             logger.debug("Using backup COIN-OR CBC solver")
             solver = po.SolverFactory("cbc")
 
+            # Set timeout limit on solve
+            if self.time_limit is not None:
+                solver.options['TimeLimit'] = self.time_limit
+
         try:
-            self.solution = solver.solve(self)
+            self.solution = solver.solve(self, tee=self.verbose)
         except ApplicationError as e:
             logger.error(f"Solver error: {e}")
 
