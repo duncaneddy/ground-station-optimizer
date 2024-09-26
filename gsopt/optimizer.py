@@ -152,3 +152,9 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         raise NotImplementedError
+
+    def set_verbose(self, verbose: bool):
+        self.verbose = verbose
+
+    def set_time_limit(self, time_limit: float):
+        self.time_limit = time_limit
