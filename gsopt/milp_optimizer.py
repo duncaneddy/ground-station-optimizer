@@ -307,7 +307,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             if self.presolve is not None:
                 if self.presolve not in [0, 1, 2]:
                     raise ValueError("Presolve must be 0, 1, or 2")
-                solver.presovle['Presolve'] = self.presolve
+                solver.options['Presolve'] = self.presolve
 
         try:
             self.solution = solver.solve(self, tee=self.verbose)
