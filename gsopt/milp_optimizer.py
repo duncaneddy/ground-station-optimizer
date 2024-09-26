@@ -41,13 +41,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
     A MILP optimizer defines
     """
 
-    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi):
+    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi, presolve: int | None = None):
         # Initialize parent classes
         pk.block.__init__(self)
         GroundStationOptimizer.__init__(self, opt_window)
 
         # Set optimizer
         self.optimizer = optimizer
+        self.presolve = presolve
 
         # Define MILP objective
         self.obj_block = pk.block()
@@ -303,6 +304,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             # Set timeout limit on solve
             if self.time_limit is not None:
                 solver.options['TimeLimit'] = self.time_limit
+            if self.presolve is not None:
+                if self.presolve not in [0, 1, 2]:
+                    raise ValueError("Presolve must be 0, 1, or 2")
+                solver.presovle['Presolve'] = self.presolve
 
         try:
             self.solution = solver.solve(self, tee=self.verbose)
@@ -512,3 +517,12 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
 
         yield tbl
+
+    def set_presolve(self, presolve: int):
+        """
+        Set the presolve level for the solver
+
+        Args:
+            presolve (int): Presolve level (0, 1, 2)
+        """
+        self.presolve = presolve
