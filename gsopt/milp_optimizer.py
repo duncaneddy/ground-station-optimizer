@@ -248,8 +248,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
             # logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
 
+            # Ensure that station node is scheduled if at least one contact is scheduled
             self.constraints.append(pk.constraint(
                 sum([self.contact_nodes[c.id].var for c in contact_node_group]) <= num_station_contacts * self.station_nodes[gs_id].var
+            ))
+
+            # Ensure at least one contact is scheduled if station is scheduled
+            self.constraints.append(pk.constraint(
+                sum([self.contact_nodes[c.id].var for c in contact_node_group]) >= self.station_nodes[gs_id].var
             ))
 
             self.n_constraints += 1
