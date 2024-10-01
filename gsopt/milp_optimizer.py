@@ -18,6 +18,7 @@ import streamlit as st
 from pyomo.common.errors import ApplicationError
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
+from rich.text import Text
 
 from gsopt import utils
 from gsopt.milp_constraints import GSOptConstraint
@@ -505,14 +506,27 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("Objective Value", str(self.obj_block.obj()))
         tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))
         for provider in self.provider_nodes.values():
-            tbl.add_row(f" - {provider.model.name}", str(provider.var()))
+            if provider.var() > 0:
+                text = Text("Yes")
+                text.stylize("bright_green", 0, 4)
+            else:
+                text = Text("No")
+                text.stylize("bright_red", 0, 2)
+
+            tbl.add_row(f" - {provider.model.name}", text)
 
         tbl.add_row("# of Selected Stations", str(sum([sn.var() for sn in self.station_nodes.values()])))
 
         for _, station_groups in groupby(sorted(self.station_nodes.values(), key=lambda x: x.provider.name),
                                          lambda x: x.provider.name):
             for s in station_groups:
-                tbl.add_row(f" - {s.provider.name}-{s.model.name}", str(s.var()))
+                if s.var() > 0:
+                    text = Text("Yes")
+                    text.stylize("bright_green", 0, 4)
+                else:
+                    text = Text("No")
+                    text.stylize("bright_red", 0, 2)
+                tbl.add_row(f" - {s.provider.name}-{s.model.name}", text)
 
         tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
 

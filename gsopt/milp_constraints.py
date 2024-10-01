@@ -598,3 +598,37 @@ class RequireStationConstraint(pk.block, GSOptConstraint):
                 return
 
         raise RuntimeError(f"Could not find a station with name \"{self.required_name}\" and provider \"{self.required_provider}\".")
+
+class StationNumberConstraint(pk.block, GSOptConstraint):
+    """
+    Constraint to require a specific number of stations to be selected. The minimum, maximum, or both bounds
+    must be provided. If a provider is provided then the constraint is applied to the stations of that provider.
+    """
+
+    def __init__(self, minimum: int | None = None, maximum: int | None = None, provider: str | None = None, **kwargs):
+        pk.block.__init__(self)
+        GSOptConstraint.__init__(self, minimum=minimum, maximum=maximum, provider=provider)
+
+        self.minimum = minimum
+        self.maximum = maximum
+        self.provider = provider
+
+        if minimum is None and maximum is None:
+            raise ValueError("Either the minimum or maximum number of stations must be provided.")
+
+    @time_milp_generation
+    def _generate_constraints(self, station_nodes: dict[str, StationNode] | None = None, **kwargs):
+        """
+        Generate the constraint_list function.
+        """
+
+        if self.provider is not None:
+            station_nodes = filter(lambda sn: sn.model.provider == self.provider, station_nodes.values())
+        else:
+            station_nodes = station_nodes.values()
+
+        if self.minimum is not None:
+            self.constraints.append(pk.constraint(sum(sn.var for sn in station_nodes) >= self.minimum))
+
+        if self.maximum is not None:
+            self.constraints.append(pk.constraint(sum(sn.var for sn in station_nodes) <= self.maximum))
