@@ -18,6 +18,7 @@ import streamlit as st
 from pyomo.common.errors import ApplicationError
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
+from rich.text import Text
 
 from gsopt import utils
 from gsopt.milp_constraints import GSOptConstraint
@@ -41,13 +42,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
     A MILP optimizer defines
     """
 
-    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi):
+    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi, presolve: int | None = None):
         # Initialize parent classes
         pk.block.__init__(self)
         GroundStationOptimizer.__init__(self, opt_window)
 
         # Set optimizer
         self.optimizer = optimizer
+        self.presolve = presolve
 
         # Define MILP objective
         self.obj_block = pk.block()
@@ -246,8 +248,14 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
             # logger.debug(f'Generating constraints for station {gs_id} with {num_station_contacts} contacts')
 
+            # Ensure that station node is scheduled if at least one contact is scheduled
             self.constraints.append(pk.constraint(
                 sum([self.contact_nodes[c.id].var for c in contact_node_group]) <= num_station_contacts * self.station_nodes[gs_id].var
+            ))
+
+            # Ensure at least one contact is scheduled if station is scheduled
+            self.constraints.append(pk.constraint(
+                sum([self.contact_nodes[c.id].var for c in contact_node_group]) >= self.station_nodes[gs_id].var
             ))
 
             self.n_constraints += 1
@@ -300,8 +308,16 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             logger.debug("Using backup COIN-OR CBC solver")
             solver = po.SolverFactory("cbc")
 
+            # Set timeout limit on solve
+            if self.time_limit is not None:
+                solver.options['TimeLimit'] = self.time_limit
+            if self.presolve is not None:
+                if self.presolve not in [0, 1, 2]:
+                    raise ValueError("Presolve must be 0, 1, or 2")
+                solver.options['Presolve'] = self.presolve
+
         try:
-            self.solution = solver.solve(self)
+            self.solution = solver.solve(self, tee=self.verbose)
         except ApplicationError as e:
             logger.error(f"Solver error: {e}")
 
@@ -496,15 +512,37 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
         tbl.add_row("Objective Value", str(self.obj_block.obj()))
         tbl.add_row("# of Selected Providers", str(sum([pn.var() for pn in self.provider_nodes.values()])))
         for provider in self.provider_nodes.values():
-            tbl.add_row(f" - {provider.model.name}", str(provider.var()))
+            if provider.var() > 0:
+                text = Text("Yes")
+                text.stylize("bright_green", 0, 4)
+            else:
+                text = Text("No")
+                text.stylize("bright_red", 0, 2)
+
+            tbl.add_row(f" - {provider.model.name}", text)
 
         tbl.add_row("# of Selected Stations", str(sum([sn.var() for sn in self.station_nodes.values()])))
 
         for _, station_groups in groupby(sorted(self.station_nodes.values(), key=lambda x: x.provider.name),
                                          lambda x: x.provider.name):
             for s in station_groups:
-                tbl.add_row(f" - {s.provider.name}-{s.model.name}", str(s.var()))
+                if s.var() > 0:
+                    text = Text("Yes")
+                    text.stylize("bright_green", 0, 4)
+                else:
+                    text = Text("No")
+                    text.stylize("bright_red", 0, 2)
+                tbl.add_row(f" - {s.provider.name}-{s.model.name}", text)
 
         tbl.add_row("# of Selected Contacts", str(sum([cn.var() for cn in self.contact_nodes.values()])))
 
         yield tbl
+
+    def set_presolve(self, presolve: int):
+        """
+        Set the presolve level for the solver
+
+        Args:
+            presolve (int): Presolve level (0, 1, 2)
+        """
+        self.presolve = presolve

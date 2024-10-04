@@ -147,26 +147,27 @@ optimizer.compute_contacts()
 # These are the available objectives that can be set on the optimizer. Only one objective can be set at a time.
 optimizer.set_objective(
     # MinCostObjective()
-    MaxDataDownlinkObjective()
-    # MinMaxContactGapObjective()
+    # MaxDataDownlinkObjective()
+    MinMaxContactGapObjective()
 )
 
 # Add Constraints
 # This is the full set of constraints that can be added to the optimizer. Uncomment the ones you want to use.
 optimizer.add_constraints([
-    MaxProvidersConstraint(num_providers=3),
-    MinContactDurationConstraint(min_duration=300.0),
-    MinConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
-    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
-    MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
-    MaxOperationalCostConstraint(value=800000),
-    # MaxAntennaUsageConstraint(),
+    MaxProvidersConstraint(num_providers=1),
+    MinContactDurationConstraint(min_duration=180.0),
+    StationNumberConstraint(minimum=1, maximum=7),
+    # MinConstellationDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300),
+    # MinSatelliteDataDownlinkConstraint(value=1.0e9, period=96.0*60, step=300),
+    # MinSatelliteDataDownlinkConstraint(value=1.0e9, period=86400.0, step=300, satellite_id=25544),
+    # MaxOperationalCostConstraint(value=800000),
+    # # MaxAntennaUsageConstraint(),
     StationContactExclusionConstraint(),
     SatelliteContactExclusionConstraint(),
-    # MaxContactGapConstraint(value=60.0*90),
-    MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
-    RequireProviderConstraint('Viasat'),
-    RequireStationConstraint(name='Oregon', provider='Aws')
+    # # MaxContactGapConstraint(value=60.0*90),
+    # MaxContactsPerPeriodConstraint(value=50, period=86400.0, step=300),
+    # RequireProviderConstraint('Viasat'),
+    # RequireStationConstraint(name='Oregon', provider='Aws')
 ])
 
 # Solve the optimization problem

@@ -21,8 +21,11 @@ logger = logging.getLogger()
 
 class GroundStationOptimizer(metaclass=ABCMeta):
 
-    def __init__(self, opt_window: OptimizationWindow):
+    def __init__(self, opt_window: OptimizationWindow, verbose: bool = False, time_limit: float | None = None):
         super().__init__()
+
+        self.verbose = verbose
+        self.time_limit = time_limit
 
         self.opt_window = opt_window
 
@@ -149,3 +152,9 @@ class GroundStationOptimizer(metaclass=ABCMeta):
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
         raise NotImplementedError
+
+    def set_verbose(self, verbose: bool):
+        self.verbose = verbose
+
+    def set_time_limit(self, time_limit: float):
+        self.time_limit = time_limit
