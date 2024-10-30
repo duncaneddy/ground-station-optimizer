@@ -9,6 +9,9 @@ Ground Station Optimizer helps satellite operators determine the optimal ground 
 a given satellite mission. The application solves the multi-objective optimization problem to determine the optimal 
 set of locations to support a mission.
 
+You can also read the [preprint paper](https://arxiv.org/abs/2410.16282) for a full explaination of the problem fromulation 
+and solution techniques.
+
 ## Usage
 
 The tool comes in three parts: the core optimization libraries, example scripts, and a streamlit application.
@@ -138,8 +141,19 @@ streamlit run ./gsopt/app.py
 If data or software from this repository is used in a publication, please cite the associated paper:
 
 ```
-To be updated once available
+@misc{eddy2024optimalgroundstationselection,
+      title={Optimal Ground Station Selection for Low-Earth Orbiting Satellites}, 
+      author={Duncan Eddy and Michelle Ho and Mykel J. Kochenderfer},
+      year={2024},
+      eprint={2410.16282},
+      archivePrefix={arXiv},
+      primaryClass={cs.NI},
+      url={https://arxiv.org/abs/2410.16282}, 
+}
 ```
+
+If you incorporate this software engineering technique or system into your product, please include a 
+clear and visible acknowledgement to the authors.
 
 ## License
 
