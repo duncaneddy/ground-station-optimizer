@@ -33,7 +33,48 @@ logger = logging.getLogger()
 # Enumeration of available optimizers
 class OptimizerType(Enum):
     Gurobi = 'gurobi'
+    Scip = 'scip'
     Cbc = 'cbc'
+    Glpk = 'glpk'
+
+def get_optimizer(optimizer: str) -> OptimizerType:
+    """
+    Get the optimizer type from a string
+
+    Args:
+        optimizer (str): Optimizer string
+
+    Returns:
+        OptimizerType: Optimizer type
+    """
+
+    if optimizer.lower() == 'gurobi':
+        return OptimizerType.Gurobi
+    if optimizer.lower() == 'scip':
+        return OptimizerType.Scip
+    elif optimizer.lower() == 'glpk':
+        return OptimizerType.Glpk
+    elif optimizer.lower() == 'cbc':
+        return OptimizerType.Cbc
+    else:
+        raise ValueError(f"Unsupported optimizer: {optimizer}")
+
+def check_solver(optimizer: str | OptimizerType) -> bool:
+
+    # Convert type to string if necessary
+    if isinstance(optimizer, OptimizerType):
+        optimizer = optimizer.value
+    
+    if optimizer.lower() == 'gurobi':
+        return po.SolverFactory("gurobi").available()
+    elif optimizer.lower() == 'scip':
+        return po.SolverFactory("scip", executable=os.popen('which scip').read().strip()).available()
+    elif optimizer.lower() == 'glpk':
+        return po.SolverFactory("glpk").available()
+    elif optimizer.lower() == 'cbc':
+        return po.SolverFactory("cbc").available()
+    else:
+        raise ValueError(f"Unsupported optimizer: {optimizer}")
 
 
 # MILP Optimizer
@@ -42,7 +83,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
     A MILP optimizer defines
     """
 
-    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Gurobi, presolve: int | None = None):
+    def __init__(self, opt_window: OptimizationWindow, optimizer: OptimizerType = OptimizerType.Cbc, presolve: int | None = 1):
         # Initialize parent classes
         pk.block.__init__(self)
         GroundStationOptimizer.__init__(self, opt_window)
@@ -77,6 +118,10 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
 
         self._problem_initialized = False
         self._objective_set = False
+
+        # Confirm the selected solver is available
+        if not check_solver(optimizer):
+            raise RuntimeError(f"Selected solver {optimizer} is not available. Please select a different solver.")
 
     @property
     def opt_start(self):
@@ -296,7 +341,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             self.generate_problem()
             self._problem_initialized = True
 
-        logger.info("Solving MILP problem...")
+        logger.info(f"Solving MILP problem using the {self.optimizer.value.capitalize()} solver...")
         ts = time.perf_counter()
 
         # Select solver
@@ -304,8 +349,16 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             logger.debug("Using Gurobi solver")
             solver = po.SolverFactory("gurobi")
 
+        elif self.optimizer == OptimizerType.Scip:
+            logger.debug("Using SCIP solver")
+            solver = po.SolverFactory("scip", executable=os.popen('which scip').read().strip())
+
+        elif self.optimizer == OptimizerType.Glpk:
+            logger.debug("Using GLPK solver")
+            solver = po.SolverFactory("glpk")
+
         else:
-            logger.debug("Using backup COIN-OR CBC solver")
+            logger.debug("Using backup Coin-OR Cbc solver")
             solver = po.SolverFactory("cbc")
 
             # Set timeout limit on solve

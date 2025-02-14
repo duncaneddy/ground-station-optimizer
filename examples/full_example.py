@@ -25,8 +25,13 @@ import brahe as bh
 from gsopt.milp_constraints import *
 from gsopt.milp_objectives import *
 from gsopt.models import Satellite, GroundStation, GroundStationProvider, OptimizationWindow
-from gsopt.milp_optimizer import MilpOptimizer
+from gsopt.milp_optimizer import MilpOptimizer, get_optimizer
 from gsopt.utils import LOG_FORMAT_VERBOSE, LOG_DATE_FORMAT
+
+
+# OPTIMIZER SELECTION
+
+optimizer = get_optimizer('cbc') # 'scip', 'cbc', 'glpk', or 'gurobi'
 
 # Set seed to ensure consistency
 random.seed(42)
@@ -126,7 +131,7 @@ opt_window = OptimizationWindow(
 
 # Create a MILP optimizer
 
-optimizer = MilpOptimizer(opt_window)
+optimizer = MilpOptimizer(opt_window, optimizer=optimizer)
 
 for provider in providers:
     console.print(provider)

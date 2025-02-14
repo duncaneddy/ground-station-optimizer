@@ -2,20 +2,28 @@
 
 This repository provides an application for determining the optimal ground station provider and station provider for a 
 given satellite mission. It contains the code and examples supporting the associated paper presented at the 2025 IEEE 
-Aerospace Conference. You can read more about the problem definition and formulation in the pre-print available here
-(to be updated).
+Aerospace Conference. You can read more about the problem definition and formulation in the [preprint paper](https://arxiv.org/abs/2410.16282).
 
 Ground Station Optimizer helps satellite operators determine the optimal ground station provider and station provider for
 a given satellite mission. The application solves the multi-objective optimization problem to determine the optimal 
 set of locations to support a mission.
 
-You can also read the [preprint paper](https://arxiv.org/abs/2410.16282) for a full explaination of the problem fromulation 
-and solution techniques.
-
 ## Usage
 
 The tool comes in three parts: the core optimization libraries, example scripts, and a streamlit application.
 Any of these can be used to define and solve a problem.
+
+### Examples
+
+To aid users in understanding and using the optimization framework of the library we have provided four examples in 
+the `examples/` folder. These examples are:
+
+- `full_example.py`: A generic example demonstrating setting up a problem and applying many different constraints to the problem
+- `max_data_opt.py`: A total data downlink maximization problem. Optimization is subject to maximum cost constraints.
+- `min_cost_opt.py`: A formulation of the mission-cost minimization problem. Optimization is subject to minimum data constraints.
+- `max_gap_opt.py`: A formulation of the maximum contact-gap minimization problem. Problem formulation is subject to minimum data downlink constraints.
+
+These scripts can be copied and modified for your specific application.
 
 ### Python Library
 
@@ -45,53 +53,16 @@ For most script based applciations users will want to add new constraints or obj
 `milp_optimizer.py` file. The `scenarios.py` file provides utilities to enable users to define new randomized scenarios
 for evaluation.
 
-### Examples
+<!-- ### Streamlit Application
 
-To aid users in understanding and using the optimization framework of the library we have provided four examples in 
-the `examples/` folder. These examples are:
+> [!NOTE] The streamlit application and docker builds are currently works in progress and not  -->
 
-- `full_example.py`: A generic example demonstrating setting up a problem and applying many different constraints to the problem
-- `max_data_opt.py`: A total data downlink maximization problem. Optimization is subject to maximum cost constraints.
-- `min_cost_opt.py`: A formulation of the mission-cost minimization problem. Optimization is subject to minimum data constraints.
-- `max_gap_opt.py`: A formulation of the maximum contact-gap minimization problem. Problem formulation is subject to minimum data downlink constraints.
+## Installation
 
-### Streamlit Application
+Currently, the repository can be installed as a local package. We would like to add docker support and the streamlit
+application eventually.
 
-**WORK IN PROGRESS** _The streamlit application is currently in the process of being updated_ 
-
-## Local Installation
-
-There are two installation options: using a local Python environment or using Docker. The Docker option is recommended
-for ease of installation and use for most users that want to use the application. The Python environment option is
-recommended for developers that want to modify the application.
-
-### Docker
-
-The application can be run using Docker. To do so, first install Docker on your system by following the instructions
-[here](https://docs.docker.com/get-docker/). Then, run the following command to start the application:
-
-```bash
-docker-compose up --detach
-```
-
-The application will be available at [http://localhost:8080](http://localhost:8080).
-
-To stop the application, run the following
-
-```bash
-docker-compose down
-```
-
-If the application is not updating you may need to remove the Docker image and rebuild it:
-
-```bash
-docker-compose down
-docker rm $(docker ps -aq)     # Note: This will remove all Docker containers
-docker rmi $(docker images -q) # Note: This will remove all Docker images
-docker-compose up --detach
-```
-
-### Python Environment
+### Local Installation
 
 To install the application using a local Python environment, first clone the repository:
 
@@ -101,9 +72,78 @@ cd gsopt
 ```
 
 Then, create a new Python environment. It is strongly recommended to use a virtual environment to avoid conflicts with
-other Python packages. Pyenv and Pyenv-virtualenv are recommended for managing Python versions and virtual environments.
+other Python packages. 
 
-To install Pyenv follow the instructions [here](https://github.com/pyenv/pyenv?tab=readme-ov-file#installation), and to
+#### Prerequisites
+
+> [!NOTE]
+> Note currently MacOS and Linux distributions are supported. The repository relies on upstream dependencies which do not support Windows.
+
+Prior to using the repository you need to install an ILP solver. This project currently supports [Gurobi](https://www.gurobi.com/), [SCIP](https://scipopt.org/#scipoptsuite), [coin-or](https://www.coin-or.org/), and [GLPK](https://www.gnu.org/software/glpk/). Gurobi is the preferred solver that is more robust and performant, but requires a commercial license for non-academic users. SCIP, Coin-Or CBC, and GLPK are open-source solvers that can be used as a free alternative.
+
+The preferred free solver is Coin-Or CBC. You install their branch-and-cut mixed integer programming solver (coin-or cbc) via the [installation instructions](https://github.com/coin-or/COIN-OR-OptimizationSuite?tab=readme-ov-file#installers). For MacOS and Ubuntu you can install it via
+
+- MacOS:
+  ```bash
+  brew install cbc
+  ```
+- Ubuntu:
+  ```bash
+  sudo apt-get install  coinor-cbc coinor-libcbc-dev
+  ```
+
+Another performant free-solver is [SCIP](https://scipopt.org/#scipoptsuite) which can be dowloaded and installed [from their main website](https://scipopt.org/index.php#download). If following this installation method, make sure that the `scip` executable is in your path and can be found with `which scip`.
+
+If using GLPK, you can install the GNU Linear Programming Kit (GLPK) via:
+
+- MacOS:
+  ```bash
+  brew install glpk
+  ```
+- Ubuntu:
+  ```bash
+  sudo apt install glpk-utils libglpk-dev
+  ```
+
+> [!NOTE]
+> It should be noted that the Gurobi solver is significantly faster and more robust than coin-or.
+>
+> Additionally, any problems that involve a maximum-gap objective or constraints will significantly increase the problem size of the optimization problems, likely beyond what coin-or can solve in a reasonable amount of time.
+
+For some performance comparisons, solving the problem `./examples/max_data_opt.py` with each solver on an AMD Ryzen 9 7950X3D 16-Core Processor with 128GB of RAM, the following results were obtained:
+
+| Problem           | Gurobi | SCIP    | Coin-OR | GLPK |
+|-------------------|--------|---------|---------|------|
+| `max_data_opt.py` | 1.03s  | 257.54s | 91.93s  | 1.5s |
+
+#### uv
+
+The recommended way to install and manage your python environment for this project is through [uv](https://docs.astral.sh/uv/). You can install uv along with its shell autocompletions by following the [installation instructions](https://docs.astral.sh/uv/getting-started/installation/).
+
+After installing uv. First check the install python versions and install a specific version
+
+```bash
+uv python list # Show python environments
+uv python install -p 3.12 # Install latest python 3.12 release
+```
+
+Create and activate a local virtual environment
+
+```bash
+uv venv -p 3.12
+source .venv/bin/activate
+```
+
+Then instlal the project dependencies with
+
+```bash
+uv pip install -e .
+```
+
+
+#### Pyenv + Pyenv-vritualenv
+
+Pyenv and Pyenv-virtualenv provide one mechanism of managing python environments. To install Pyenv follow the instructions [here](https://github.com/pyenv/pyenv?tab=readme-ov-file#installation), and to
 install Pyenv-virtualenv follow the instructions [here](https://github.com/pyenv/pyenv-virtualenv?tab=readme-ov-file#installation).
 
 Once Pyenv and Pyenv-virtualenv are installed, create a new Python environment and install the required packages:
@@ -130,11 +170,37 @@ Now, install the required packages:
 pip install -e .
 ```
 
-The application can now be run using the following command:
+You can then execute one of the examples out of the examples folder.
 
 ```bash
-streamlit run ./gsopt/app.py
+python examples/full_example.py
 ```
+
+<!-- ### Docker
+
+The application can be run using Docker. To do so, first install Docker on your system by following the instructions
+[here](https://docs.docker.com/get-docker/). Then, run the following command to start the application:
+
+```bash
+docker-compose up --detach
+```
+
+The application will be available at [http://localhost:8080](http://localhost:8080).
+
+To stop the application, run the following
+
+```bash
+docker-compose down
+```
+
+If the application is not updating you may need to remove the Docker image and rebuild it:
+
+```bash
+docker-compose down
+docker rm $(docker ps -aq)     # Note: This will remove all Docker containers
+docker rmi $(docker images -q) # Note: This will remove all Docker images
+docker-compose up --detach
+``` -->
 
 ## Citation & Acknowledgement
 

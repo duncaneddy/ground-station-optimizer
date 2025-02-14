@@ -13,7 +13,7 @@ from rich.console import Console
 
 from gsopt.milp_objectives import *
 from gsopt.milp_constraints import *
-from gsopt.milp_optimizer import MilpOptimizer
+from gsopt.milp_optimizer import MilpOptimizer, get_optimizer
 from gsopt.models import OptimizationWindow
 from gsopt.scenarios import ScenarioGenerator
 
@@ -28,8 +28,12 @@ logger = logging.getLogger(__name__)
 # Create Rich console for pretty printing
 console = Console()
 
+# OPTIMIZER SELECTION
+
+optimizer = get_optimizer('cbc') # 'scip', 'cbc', 'glpk', or 'gurobi'
+
 # Define the optimization window
-opt_start = datetime.datetime.utcnow()
+opt_start = datetime.datetime.now(datetime.timezone.utc)
 opt_end = opt_start + datetime.timedelta(days=365)
 
 # The simulation window is the duration over which we want to simulate contacts.
@@ -61,7 +65,7 @@ scen = scengen.sample_scenario()
 console.print(scen)
 
 # Create a MILP optimizer from the scenario
-optimizer = MilpOptimizer.from_scenario(scen)
+optimizer = MilpOptimizer.from_scenario(scen, optimizer=optimizer)
 
 # Compute contacts
 optimizer.compute_contacts()
