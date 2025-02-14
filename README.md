@@ -114,7 +114,7 @@ For some performance comparisons, solving the problem `./examples/max_data_opt.p
 
 | Problem           | Gurobi | SCIP    | Coin-OR | GLPK |
 |-------------------|--------|---------|---------|------|
-| `max_data_opt.py` | 1.03s  | 257.54s | 91.93s  | 1.5s |
+| `max_data_opt.py` | 1.03s  | 257.54s | 91.93s  | Did not finish after 1 hour |
 
 #### uv
 
