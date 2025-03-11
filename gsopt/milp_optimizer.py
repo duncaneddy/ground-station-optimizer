@@ -653,7 +653,7 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
                 patch = mpatches.Patch(color=color, label=provider, alpha=0.5)
                 patches.append(patch)
             if patches:
-                plt.legend(handles=patches, loc='lower right')
+                plt.legend(handles=patches, loc='lower left')
         
         # Save the figure
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
