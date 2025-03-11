@@ -20,6 +20,8 @@ def select_color(owner):
         return 'green'
     elif owner.lower() == 'azure':
         return 'blue'
+    elif owner.lower() == 'ssc':
+        return 'cyan'
     else:
         return 'grey'
 
