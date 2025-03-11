@@ -10,6 +10,10 @@
 data/single_sat_solution.json
 full_example.json
 
+# Example outputs
+exmaples/*.json
+examples/*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
