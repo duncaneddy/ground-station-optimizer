@@ -423,6 +423,26 @@ class MaxProvidersConstraint(pk.block, GSOptConstraint):
 
         self.constraints.append(pk.constraint(sum(pn.var for pn in provider_nodes.values()) <= self.num_providers))
 
+class MaxStationsConstraint(pk.block, GSOptConstraint):
+    """
+    Constraint that enforces the number of ground station locations that can be selected is less than or equal to
+    the given number.
+    """
+
+    def __init__(self, num_stations: int = 1, **kwargs):
+        pk.block.__init__(self)
+        GSOptConstraint.__init__(self, num_providers=num_stations)
+
+        self.num_stations = num_stations
+
+    @time_milp_generation
+    def _generate_constraints(self, station_nodes: dict[str, StationNode] | None = None, **kwargs):
+        """
+        Generate the constraint_list function.
+        """
+
+        self.constraints.append(pk.constraint(sum(pn.var for pn in station_nodes.values()) <= self.num_stations))
+
 
 class MinContactDurationConstraint(pk.block, GSOptConstraint):
     """
