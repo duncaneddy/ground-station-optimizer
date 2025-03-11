@@ -20,6 +20,11 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 from rich.text import Text
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
+from gsopt.plots import plot_stations, select_color
+
 from gsopt import utils
 from gsopt.milp_constraints import GSOptConstraint
 from gsopt.milp_core import ProviderNode, StationNode, ContactNode, SatelliteNode
@@ -599,3 +604,58 @@ class MilpOptimizer(pk.block, GroundStationOptimizer):
             presolve (int): Presolve level (0, 1, 2)
         """
         self.presolve = presolve
+
+    def save_plot(self, filepath='station_selection.png', legend: bool = True):
+        """
+        Plot the ground stations on a map.
+        - If the optimizer hasn't been solved yet, plot all stations.
+        - If the optimizer has been solved, plot only the selected stations.
+        
+        Args:
+            filepath (str): Path to save the plot. Default is 'station_selection.png'.
+        
+        Returns:
+            tuple: Figure and axes objects for further customization.
+        """
+        # Determine which stations to plot based on solver status
+        if self.solver_status == 'Not Solved':
+            # Plot all stations if not solved
+            stations_to_plot = []
+            for provider_id, provider in self.providers.items():
+                for station in provider.stations:
+                    stations_to_plot.append((station.lon, station.lat, station.provider))
+            title = "All Available Ground Stations"
+        else:
+            # Plot only selected stations if solved
+            stations_to_plot = []
+            for sn_id, sn in self.station_nodes.items():
+                if sn.var() > 0:  # This station is selected
+                    station = self.stations[sn_id]
+                    stations_to_plot.append((station.lon, station.lat, station.provider))
+            title = "Selected Ground Stations"
+        
+        # Get minimum elevation angle and altitude from satellites
+        elevation_min = min([station.elevation_min for station in self.stations.values()]) if self.stations else 10.0
+        altitude = min([sat.alt for sat in self.satellites.values()]) if self.satellites else 500e3
+        
+        # Plot the stations
+        fig, ax = plot_stations(stations_to_plot, elevation_min=elevation_min, alt=altitude)
+        
+        # Add title and customize plot
+        plt.title(title)
+        
+        # Add a legend of providers
+        if legend:
+            providers = set(station[2] for station in stations_to_plot)
+            patches = []
+            for provider in providers:
+                color = select_color(provider)
+                patch = mpatches.Patch(color=color, label=provider, alpha=0.5)
+                patches.append(patch)
+            if patches:
+                plt.legend(handles=patches, loc='lower right')
+        
+        # Save the figure
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        
+        return fig, ax
