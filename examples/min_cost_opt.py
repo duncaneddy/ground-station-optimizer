@@ -30,7 +30,7 @@ console = Console()
 
 # OPTIMIZER SELECTION
 
-optimizer = get_optimizer('cbc') # 'scip', 'cbc', 'glpk', or 'gurobi'
+optimizer = get_optimizer('gurobi') # 'scip', 'cbc', 'glpk', or 'gurobi'
 
 
 # Define the optimization window
@@ -68,6 +68,9 @@ console.print(scen)
 # Create a MILP optimizer from the scenario
 optimizer = MilpOptimizer.from_scenario(scen, optimizer=optimizer)
 
+# Save plot of all stations
+optimizer.save_plot('min_cost_opt_all_stations.png')
+
 # Compute contacts
 optimizer.compute_contacts()
 
@@ -90,4 +93,5 @@ optimizer.solve()
 # Display results
 console.print(optimizer)
 
-# Display contact statistics
+# Save plot of selected stations
+optimizer.save_plot('min_cost_opt_selected_stations.png')

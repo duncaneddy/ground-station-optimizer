@@ -16,6 +16,9 @@ from gsopt.milp_constraints import *
 from gsopt.milp_optimizer import MilpOptimizer, get_optimizer
 from gsopt.models import OptimizationWindow
 from gsopt.scenarios import ScenarioGenerator
+from gsopt.utils import filter_warnings
+
+filter_warnings()
 
 # Set up logging
 logging.basicConfig(
@@ -30,7 +33,7 @@ console = Console()
 
 # OPTIMIZER SELECTION
 
-optimizer = get_optimizer('cbc') # 'scip', 'cbc', 'glpk', or 'gurobi'
+optimizer = get_optimizer('gurobi') # 'scip', 'cbc', 'glpk', or 'gurobi'
 
 # Define the optimization window
 opt_start = datetime.datetime.now(datetime.timezone.utc)
@@ -67,6 +70,9 @@ console.print(scen)
 # Create a MILP optimizer from the scenario
 optimizer = MilpOptimizer.from_scenario(scen, optimizer=optimizer)
 
+# Save all potential stations
+optimizer.save_plot('max_data_opt_all_stations.png')
+
 # Compute contacts
 optimizer.compute_contacts()
 
@@ -89,3 +95,6 @@ optimizer.solve()
 
 # Display results
 console.print(optimizer)
+
+# Save the plot of the optimized contacts
+optimizer.save_plot('max_data_opt_selected_stations.png')
